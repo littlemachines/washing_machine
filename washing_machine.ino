@@ -115,6 +115,11 @@ const int handwashSpin[] = {400};
 
 // Дефиниране на програмите
 WashProgram programs[] = {
+  // {"White Cotton", cottonTemp, 4, cottonSpin, 5, 1*60000, 10*60000, 8},    // 45 мин пране, 10 мин центрофуга
+  // {"Color Cotton", cottonTemp, 4, cottonSpin, 5, 1*60000, 10*60000, 7},    // 40 мин пране, 10 мин центрофуга
+  // {"Synthetic", syntheticTemp, 3, syntheticSpin, 3, 1*60000, 8*60000, 6},  // 35 мин пране, 8 мин центрофуга
+  // {"Wool", woolTemp, 2, woolSpin, 2, 1*60000, 5*60000, 4},                 // 30 мин пране, 5 мин центрофуга
+  // {"Hand Wash", handwashTemp, 1, handwashSpin, 1, 1*60000, 3*60000, 3}     // 25 мин пране, 3 мин центрофуга
   {"White Cotton", cottonTemp, 4, cottonSpin, 5, 45*60000, 10*60000, 8},    // 45 мин пране, 10 мин центрофуга
   {"Color Cotton", cottonTemp, 4, cottonSpin, 5, 40*60000, 10*60000, 7},    // 40 мин пране, 10 мин центрофуга
   {"Synthetic", syntheticTemp, 3, syntheticSpin, 3, 35*60000, 8*60000, 6},  // 35 мин пране, 8 мин центрофуга
@@ -346,25 +351,62 @@ void updateLED() {
 }
 
 void runWashCycle() {
-  static unsigned long lastMove = 0;
-  static int direction = 1;
-  
-  if (millis() - lastMove > (currentPhase == 3 ? 100 : 500)) {
-    int speed;
-    
-    if (currentPhase == 3) { // Центрофуга
-      speed = 180 + (70 * direction); // Бързо въртене: ~90% скорост
-    } else {
-      speed = 180 + (30 * direction * programs[selectedProgram].drumMovementIntensity / 10); // Нормално пране: 30-70% скорост
-    }
-    
-    if (random(100) < 5) { // 5% шанс за смяна на посоката
-      direction *= -1;
-    }
-    
-    washingDrum.write(speed); // 0-90 обратна посока, 90-180 стоп, 180-270 права посока
-    lastMove = millis();
-  }
+ static unsigned long washStartTime = 0;
+ static unsigned long lastMove = 0;
+ static int direction = 1;
+ 
+ if (washStartTime == 0) {
+   washStartTime = millis();
+   currentPhase = 0;
+ }
+ 
+ WashProgram currentProg = programs[selectedProgram];
+ unsigned long totalWashTime = currentProg.baseWashTime;
+ unsigned long totalSpinTime = currentProg.baseSpinTime;
+
+ if (washOptions.quickWash) {
+   totalWashTime *= 0.6;
+   totalSpinTime *= 0.8;
+ }
+ if (washOptions.ecoMode) {
+   totalWashTime *= 1.2;
+ }
+
+ unsigned long phaseTime;
+ if (currentPhase == 3) {
+   phaseTime = totalSpinTime;
+ } else {
+   phaseTime = totalWashTime / 4;
+ }
+ 
+ unsigned long elapsedTime = millis() - washStartTime;
+ if (elapsedTime >= phaseTime) {
+    // Стоп за малко като сменяме фазите
+    washingDrum.writeMicroseconds(1500); // Ширина 1.5 ms
+    delay(2000);
+   currentPhase++;
+   washStartTime = millis();
+   
+   if (currentPhase >= 5) {
+     isWashing = false;
+     washingDrum.write(90);
+     currentPhase = 0;
+     updateDisplay();
+     return;
+   }
+   updateDisplay();
+ }
+ 
+ if (currentPhase == 3) { // Центрофуга
+    washingDrum.writeMicroseconds(1000); // Постоянна максимална скорост в една посока
+ } else if (millis() - lastMove > 500) {
+  // тия долу са бъгави, трябва да ги оправим някак си
+   // int speed = 180 + (30 * direction * currentProg.drumMovementIntensity / 10);
+   // if (random(100) < 5) direction *= -1;
+   washingDrum.writeMicroseconds(1750);
+   lastMove = millis();
+   updateDisplay();
+ }
 }
 
 void updateDisplay() {
