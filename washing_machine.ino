@@ -1,6 +1,5 @@
 #include <Wire.h>
-#include <Adafruit_GFX.h>
-#include <Adafruit_SSD1306.h>
+#include <U8g2lib.h>
 #include <Servo.h>
 
 // Дефиниране на пинове
@@ -21,30 +20,62 @@
 #define CHAR_HEIGHT 8     // Височина на един ред в пиксели
 #define VISIBLE_ROWS (YELLOW_ROWS + BLUE_ROWS)  // Общ брой видими редове
 
-// За двуцветен OLED дисплей с жълта и синя секция
-class DualColorOLED : public Adafruit_SSD1306 {
+// Дефинираме клас OLED за дисплея
+class DualColorOLED {
+private:
+    U8G2_SSD1306_128X64_NONAME_F_HW_I2C display; // Основен обект на U8g2
+    const int yellowRows;
+    const int blueRows;
+    const int charHeight;
+
 public:
-    DualColorOLED(uint8_t w, uint8_t h, TwoWire *twi, int8_t rst_pin) 
-        : Adafruit_SSD1306(w, h, twi, rst_pin) {}
-    
-    // Функция за писане в жълтата секция
-    void printInYellowSection(const char* text, int row) {
-        if (row < YELLOW_ROWS) {
-            setCursor(0, row * CHAR_HEIGHT);
-            println(text);
+    DualColorOLED(int yellowRows, int blueRows, int charHeight)
+        : display(U8G2_R0, /* reset=*/ U8X8_PIN_NONE),
+          yellowRows(yellowRows), blueRows(blueRows), charHeight(charHeight) {}
+
+    void begin() {
+        display.begin();
+        display.setFont(u8g2_font_ncenB08_tr);
+    }
+
+    void clearDisplay() {
+        display.clearBuffer();
+    }
+
+    void sendBuffer() {
+        display.sendBuffer();
+    }
+
+    void setCursor(int x, int y) {
+        display.setCursor(x, y);
+    }
+
+    void print(const char *text) {
+        display.print(text);
+    }
+
+    void println(const char *text) {
+        display.print(text);
+        display.print("\n");
+    }
+
+    void printInYellowSection(const char *text, int row) {
+        if (row < yellowRows) {
+            setCursor(0, row * charHeight);
+            print(text);
         }
     }
-    
-    // Функция за писане в синята секция
-    void printInBlueSection(const char* text, int row) {
-        if (row >= 0 && row < BLUE_ROWS) {
-            setCursor(0, (YELLOW_ROWS + row) * CHAR_HEIGHT);
-            println(text);
+
+    void printInBlueSection(const char *text, int row) {
+        if (row >= 0 && row < blueRows) {
+            setCursor(0, (yellowRows + row) * charHeight);
+            print(text);
         }
     }
 };
 
-DualColorOLED display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
+// --- Инстанция на класа ---
+DualColorOLED oled(2, 4, 8); // 2 жълти реда, 4 сини реда, височина на символите 8 пиксела
 
 // Създаване на обект за серво мотора
 Servo washingDrum;
@@ -156,12 +187,10 @@ void setup() {
   Serial.println("Servo initialized");
   
   // Инициализация на дисплея
-  if(!display.begin(SSD1306_SWITCHCAPVCC, 0x3C)) {
-    for(;;); // Спиране ако дисплеят не се инициализира
-  }
-  display.clearDisplay();
-  display.setTextSize(1);
-  display.setTextColor(SSD1306_WHITE);
+    oled.begin();
+    oled.clearDisplay();
+    oled.printInYellowSection("Starting...", 0);
+    oled.sendBuffer();
 
   Serial.println("Display initialized");
   
@@ -379,8 +408,8 @@ void runWashCycle() {
 }
 
 void updateDisplay() {
-  display.clearDisplay();
-  display.setCursor(0,0);
+  oled.clearDisplay();
+  oled.setCursor(0,0);
   
   switch (currentState) {
     case PROGRAM_SELECT:
@@ -397,7 +426,7 @@ void updateDisplay() {
       break;
   }
   
-  display.display();
+  oled.sendBuffer();
 }
 
 void displayProgramSelect() {
@@ -407,8 +436,8 @@ void displayProgramSelect() {
   int startIdx = max(0, min(selectedProgram - visibleItems/2, totalPrograms - visibleItems));
   
   // Показване на заглавието в жълтата секция
-  display.printInYellowSection("Select Program:", 0);
-  display.printInYellowSection("<Up/Down> to scroll", 1);
+  oled.printInYellowSection("Select Program:", 0);
+  oled.printInYellowSection("<Up/Down> to scroll", 1);
   
   // Показване на програмите в синята секция
   for (int i = 0; i < visibleItems; i++) {
@@ -420,16 +449,16 @@ void displayProgramSelect() {
       } else {
         snprintf(buffer, sizeof(buffer), "  %s", programs[programIdx].name);
       }
-      display.printInBlueSection(buffer, i);
+      oled.printInBlueSection(buffer, i);
     }
   }
   
   // Индикатори за скролинг ако има още опции
   if (startIdx > 0) {
-    display.printInYellowSection("^", 0);  // Стрелка нагоре
+    oled.printInYellowSection("^", 0);  // Стрелка нагоре
   }
   if (startIdx + visibleItems < totalPrograms) {
-    display.printInBlueSection("v", visibleItems-1);  // Стрелка надолу
+    oled.printInBlueSection("v", visibleItems-1);  // Стрелка надолу
   }
 }
 
@@ -439,10 +468,10 @@ void displayTempSelect() {
   int startIdx = max(0, min(selectedTemp - visibleItems/2, totalTemps - visibleItems));
   
   // Показване на заглавието в жълтата секция
-  display.printInYellowSection("Select Temperature:", 0);
+  oled.printInYellowSection("Select Temperature:", 0);
   char progName[21];
   snprintf(progName, sizeof(progName), "Program: %s", programs[selectedProgram].name);
-  display.printInYellowSection(progName, 1);
+  oled.printInYellowSection(progName, 1);
   
   // Показване на температурите в синята секция
   for (int i = 0; i < visibleItems; i++) {
@@ -456,16 +485,16 @@ void displayTempSelect() {
         snprintf(buffer, sizeof(buffer), "  %d°C", 
                 programs[selectedProgram].temperatures[tempIdx]);
       }
-      display.printInBlueSection(buffer, i);
+      oled.printInBlueSection(buffer, i);
     }
   }
   
   // Индикатори за скролинг
   if (startIdx > 0) {
-    display.printInYellowSection("^", 0);
+    oled.printInYellowSection("^", 0);
   }
   if (startIdx + visibleItems < totalTemps) {
-    display.printInBlueSection("v", visibleItems-1);
+    oled.printInBlueSection("v", visibleItems-1);
   }
 }
 
@@ -475,12 +504,12 @@ void displaySpinSelect() {
   int startIdx = max(0, min(selectedSpin - visibleItems/2, totalSpins - visibleItems));
   
   // Показване на заглавието в жълтата секция
-  display.printInYellowSection("Select Spin Speed:", 0);
+  oled.printInYellowSection("Select Spin Speed:", 0);
   char progInfo[21];
   snprintf(progInfo, sizeof(progInfo), "%s - %d°C", 
            programs[selectedProgram].name,
            programs[selectedProgram].temperatures[selectedTemp]);
-  display.printInYellowSection(progInfo, 1);
+  oled.printInYellowSection(progInfo, 1);
   
   // Показване на оборотите в синята секция
   for (int i = 0; i < visibleItems; i++) {
@@ -494,26 +523,26 @@ void displaySpinSelect() {
         snprintf(buffer, sizeof(buffer), "  %d rpm", 
                 programs[selectedProgram].spins[spinIdx]);
       }
-      display.printInBlueSection(buffer, i);
+      oled.printInBlueSection(buffer, i);
     }
   }
   
   // Индикатори за скролинг
   if (startIdx > 0) {
-    display.printInYellowSection("^", 0);
+    oled.printInYellowSection("^", 0);
   }
   if (startIdx + visibleItems < totalSpins) {
-    display.printInBlueSection("v", visibleItems-1);
+    oled.printInBlueSection("v", visibleItems-1);
   }
 }
 
 void displayWashing() {
   // Показване на заглавието и статуса в жълтата секция
-  display.printInYellowSection("Washing Status:", 0);
+  oled.printInYellowSection("Washing Status:", 0);
   char statusText[21];
   snprintf(statusText, sizeof(statusText), "%s", 
            isWashing ? "RUNNING" : "PAUSED");
-  display.printInYellowSection(statusText, 1);
+  oled.printInYellowSection(statusText, 1);
   
   // Показване на детайлите в синята секция
   char buffer[21];
@@ -522,17 +551,17 @@ void displayWashing() {
   snprintf(buffer, sizeof(buffer), "%s - %d°C", 
            programs[selectedProgram].name,
            programs[selectedProgram].temperatures[selectedTemp]);
-  display.printInBlueSection(buffer, 0);
+  oled.printInBlueSection(buffer, 0);
   
   // Обороти
   snprintf(buffer, sizeof(buffer), "Spin: %d rpm", 
            programs[selectedProgram].spins[selectedSpin]);
-  display.printInBlueSection(buffer, 1);
+  oled.printInBlueSection(buffer, 1);
   
   // Текуща фаза
   snprintf(buffer, sizeof(buffer), "Phase: %s", 
            washPhases[currentPhase]);
-  display.printInBlueSection(buffer, 2);
+  oled.printInBlueSection(buffer, 2);
   
   // Активни опции
   char optionsBuffer[21] = "Options: ";
@@ -541,5 +570,5 @@ void displayWashing() {
   if (washOptions.ecoMode) strcat(optionsBuffer, "E");
   if (washOptions.quickWash) strcat(optionsBuffer, "Q");
   if (strlen(optionsBuffer) == 9) strcat(optionsBuffer, "None");
-  display.printInBlueSection(optionsBuffer, 3);
+  oled.printInBlueSection(optionsBuffer, 3);
 }
