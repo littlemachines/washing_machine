@@ -376,7 +376,7 @@ void runWashCycle() {
  if (currentPhase == 3) {
    phaseTime = totalSpinTime;
  } else {
-   phaseTime = totalWashTime / 4;
+   phaseTime = totalWashTime / (sizeof(washPhases) -1); 
  }
  
  unsigned long elapsedTime = millis() - washStartTime;
