@@ -35,7 +35,8 @@ public:
 
     void begin() {
         display.begin();
-        display.setFont(u8g2_font_ncenB08_tr);
+        display.setFont(u8g2_font_6x10_tr); // опростен шрифт
+        //display.setFont(u8g2_font_ncenB08_tr);
     }
 
     void clearDisplay() {
