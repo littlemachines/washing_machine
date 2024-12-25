@@ -270,6 +270,7 @@ void toggleWashing() {
 }
 
 void navigateUp() {
+  Serial.println("Up Pressed");
   switch (currentState) {
     case PROGRAM_SELECT:
       if (selectedProgram > 0) selectedProgram--;
@@ -284,6 +285,7 @@ void navigateUp() {
 }
 
 void navigateDown() {
+  Serial.println("Down Pressed");
   switch (currentState) {
     case PROGRAM_SELECT:
       if (selectedProgram < sizeof(programs)/sizeof(programs[0]) - 1) selectedProgram++;
@@ -298,6 +300,7 @@ void navigateDown() {
 }
 
 void navigateRight() {
+  Serial.println("Right Pressed");
   switch (currentState) {
     case PROGRAM_SELECT:
       currentState = TEMP_SELECT;
@@ -315,6 +318,7 @@ void navigateRight() {
 }
 
 void navigateLeft() {
+  Serial.println("Left Pressed");
   switch (currentState) {
     case TEMP_SELECT:
       currentState = PROGRAM_SELECT;
@@ -342,68 +346,23 @@ void updateLED() {
 }
 
 void runWashCycle() {
-  static unsigned long washStartTime = 0;
   static unsigned long lastMove = 0;
   static int direction = 1;
-  static int position = 90;
   
-  // Инициализация при първо стартиране
-  if (washStartTime == 0) {
-    washStartTime = millis();
-  }
-  
-  // Изчисляване на времената според опциите
-  WashProgram currentProg = programs[selectedProgram];
-  unsigned long actualWashTime = currentProg.baseWashTime;
-  unsigned long actualSpinTime = currentProg.baseSpinTime;
-  
-  // Корекции според опциите
-  if (washOptions.quickWash) {
-    actualWashTime *= 0.6;  // 40% по-бързо
-    actualSpinTime *= 0.8;  // 20% по-бързо
-  }
-  if (washOptions.ecoMode) {
-    actualWashTime *= 1.2;  // 20% по-дълго, но по-икономично
-  }
-  
-  // Определяне на текущата фаза
-  unsigned long elapsedTime = millis() - washStartTime;
-  unsigned long totalTime = actualWashTime + actualSpinTime;
-  
-  if (washOptions.preWash && elapsedTime < actualWashTime * 0.2) {
-    currentPhase = 0; // Предпране
-  } else if (elapsedTime < actualWashTime) {
-    currentPhase = 1; // Основно пране
-  } else if (elapsedTime < actualWashTime + actualSpinTime) {
-    currentPhase = 3; // Центрофуга
-  } else {
-    // Цикълът е завършен
-    isWashing = false;
-    washStartTime = 0;
-    washingDrum.write(90);
-    return;
-  }
-  
-  // Управление на мотора според фазата и интензивността
-  if (millis() - lastMove > (currentPhase == 3 ? 100 : 500)) {  // По-бързо въртене при центрофуга
-    int moveAmount = currentProg.drumMovementIntensity * 3;  // 3-30 градуса според интензивността
+  if (millis() - lastMove > (currentPhase == 3 ? 100 : 500)) {
+    int speed;
     
-    if (currentPhase == 3) {  // Центрофуга
-      position += 45 * direction;  // По-големи и бързи движения
+    if (currentPhase == 3) { // Центрофуга
+      speed = 180 + (70 * direction); // Бързо въртене: ~90% скорост
     } else {
-      position += moveAmount * direction;
+      speed = 180 + (30 * direction * programs[selectedProgram].drumMovementIntensity / 10); // Нормално пране: 30-70% скорост
     }
     
-    if (position >= 150 || position <= 30) {
+    if (random(100) < 5) { // 5% шанс за смяна на посоката
       direction *= -1;
     }
     
-    if (washOptions.extraWater && currentPhase != 3) {
-      // При повече вода - по-бавни движения
-      position = constrain(position, 45, 135);
-    }
-    
-    washingDrum.write(position);
+    washingDrum.write(speed); // 0-90 обратна посока, 90-180 стоп, 180-270 права посока
     lastMove = millis();
   }
 }
