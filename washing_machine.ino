@@ -16,7 +16,7 @@
 #define SCREEN_HEIGHT 64
 #define OLED_RESET -1
 #define YELLOW_ROWS 2     // Брой редове в жълтата секция
-#define BLUE_ROWS 4       // Брой редове в синята секция
+#define BLUE_ROWS 6       // Брой редове в синята секция
 #define CHAR_HEIGHT 8     // Височина на един ред в пиксели
 #define VISIBLE_ROWS (YELLOW_ROWS + BLUE_ROWS)  // Общ брой видими редове
 
@@ -76,7 +76,7 @@ public:
 };
 
 // --- Инстанция на класа ---
-DualColorOLED oled(2, 4, 8); // 2 жълти реда, 4 сини реда, височина на символите 8 пиксела
+DualColorOLED oled(YELLOW_ROWS, BLUE_ROWS, CHAR_HEIGHT); // 2 жълти реда, 4 сини реда, височина на символите 8 пиксела
 
 // Създаване на обект за серво мотора
 Servo washingDrum;
