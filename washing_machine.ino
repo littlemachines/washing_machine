@@ -115,16 +115,19 @@ const int handwashSpin[] = {400};
 
 // Дефиниране на програмите
 WashProgram programs[] = {
-  // {"White Cotton", cottonTemp, 4, cottonSpin, 5, 1*60000, 10*60000, 8},    // 45 мин пране, 10 мин центрофуга
-  // {"Color Cotton", cottonTemp, 4, cottonSpin, 5, 1*60000, 10*60000, 7},    // 40 мин пране, 10 мин центрофуга
-  // {"Synthetic", syntheticTemp, 3, syntheticSpin, 3, 1*60000, 8*60000, 6},  // 35 мин пране, 8 мин центрофуга
-  // {"Wool", woolTemp, 2, woolSpin, 2, 1*60000, 5*60000, 4},                 // 30 мин пране, 5 мин центрофуга
-  // {"Hand Wash", handwashTemp, 1, handwashSpin, 1, 1*60000, 3*60000, 3}     // 25 мин пране, 3 мин центрофуга
+  // -- TEST VALUES - uncomment to use
   {"White Cotton", cottonTemp, 4, cottonSpin, 5, 45000, 10000, 8},    // 45 мин пране, 10 мин центрофуга
   {"Color Cotton", cottonTemp, 4, cottonSpin, 5, 40*60000, 10*60000, 7},    // 40 мин пране, 10 мин центрофуга
   {"Synthetic", syntheticTemp, 3, syntheticSpin, 3, 35*60000, 8*60000, 6},  // 35 мин пране, 8 мин центрофуга
   {"Wool", woolTemp, 2, woolSpin, 2, 30*60000, 5*60000, 4},                 // 30 мин пране, 5 мин центрофуга
   {"Hand Wash", handwashTemp, 1, handwashSpin, 1, 25*60000, 3*60000, 3}     // 25 мин пране, 3 мин центрофуга
+
+  // - REAL VALUES - uncomment to use
+  // {"White Cotton", cottonTemp, 4, cottonSpin, 5, 45*60000, 10*60000, 8},    // 45 мин пране, 10 мин центрофуга
+  // {"Color Cotton", cottonTemp, 4, cottonSpin, 5, 40*60000, 10*60000, 7},    // 40 мин пране, 10 мин центрофуга
+  // {"Synthetic", syntheticTemp, 3, syntheticSpin, 3, 35*60000, 8*60000, 6},  // 35 мин пране, 8 мин центрофуга
+  // {"Wool", woolTemp, 2, woolSpin, 2, 30*60000, 5*60000, 4},                 // 30 мин пране, 5 мин центрофуга
+  // {"Hand Wash", handwashTemp, 1, handwashSpin, 1, 25*60000, 3*60000, 3}     // 25 мин пране, 3 мин центрофуга
 };
 
 // Структура за меню опция
