@@ -81,7 +81,7 @@ DualColorOLED oled(YELLOW_ROWS, BLUE_ROWS, CHAR_HEIGHT); // 2 жълти ред�
 // Създаване на обект за серво мотора
 Servo washingDrum;
 
-// Структура за допълнителни опц��и
+// Структура за допълнителни опции
 struct WashOptions {
   bool preWash;
   bool extraWater;
@@ -153,7 +153,7 @@ MenuItem optionsMenu[] = {
   {"Quick wash", &washOptions.quickWash}
 };
 
-// Гобални пр��менливи за текущото състояние
+// Гобални променливи за текущото състояние
 MenuState currentState = PROGRAM_SELECT;
 int selectedProgram = 0;
 int selectedTemp = 0;
@@ -186,7 +186,7 @@ struct PhaseConfig {
   bool isSpinPhase;
 };
 
-// Конфигурации за всички фази
+// Конфигурации за всички ф��зи
 const PhaseConfig phaseConfigs[] = {
   {"Soak",         0.10, false},  // SOAK
   {"Pre-wash",     0.15, false},  // PRE_WASH
@@ -206,17 +206,17 @@ const PhaseConfig phaseConfigs[] = {
 
 // Активни фази в текущия цикъл на пране (тук можете лесно да добавяте/премахвате фази)
 const WashPhase washPhases[] = {
-  SOAK,
-  PRE_WASH,
-  PRE_WASH_SPIN,
+  // SOAK,
+  // PRE_WASH,
+  // PRE_WASH_SPIN,
   MAIN_WASH,
-  COOLING,
+ // COOLING,
   MAIN_WASH_SPIN,
   RINSE_1,
   RINSE_1_SPIN,
   RINSE_2,
   RINSE_2_SPIN,
-  RINSE_3,
+ // RINSE_3,
   DRAIN,
   FINAL_SPIN,
   ANTI_WRINKLE
@@ -228,7 +228,7 @@ int currentPhase = 0;
 unsigned long washStartTime = 0;
 
 void setup() {
-  // Стартираме серийния принт
+  // Стартираме серийния п��инт
   Serial.begin(9600); // open the serial port at 9600 bps:
   Serial.println("Program started");
 
@@ -280,7 +280,7 @@ void loop() {
 }
 
 void handleButtons() {
-  // Четене на състоянието на бу��оните
+  // Четене на състоянието на бутоните
   bool startPressed = !digitalRead(BUTTON_START);
   bool upPressed = !digitalRead(BUTTON_UP);
   bool downPressed = !digitalRead(BUTTON_DOWN);
@@ -409,13 +409,17 @@ void updateLED() {
 void runWashCycle() {
   if (!isWashing) return;
 
-  // Използваме времената от текущата програма
   const PhaseConfig& currentPhaseConfig = phaseConfigs[washPhases[currentPhase]];
   
   unsigned long phaseTime;
   if (currentPhaseConfig.isSpinPhase) {
     phaseTime = programs[selectedProgram].baseSpinTime * currentPhaseConfig.timePercent;
-    washingDrum.writeMicroseconds(1700);
+    
+    // Изчисляваме скоростта пропорционално на избраните обороти
+    // 1400 оборота = 2900 микросекунди
+    // Използваме формулата: (избрани_обороти * 2900) / 1400
+    int spinSpeed = 1500 + (programs[selectedProgram].spins[selectedSpin] / 2);
+    washingDrum.writeMicroseconds(spinSpeed);
   } else {
     phaseTime = programs[selectedProgram].baseWashTime * currentPhaseConfig.timePercent;
     washingDrum.writeMicroseconds(1300);
