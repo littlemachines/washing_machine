@@ -102,30 +102,27 @@ struct WashProgram {
 };
 
 // Възможни температури за различните програми
-const int testTemp[] = {30};
-const int cottonTemp[] = {30, 40, 60, 95};
-const int syntheticTemp[] = {30, 40, 60};
-const int woolTemp[] = {30, 40};
-const int handwashTemp[] = {30};
+const int cottonECOTemp[] = {40, 60};
+const int cottonTemp[] = {0, 20, 30, 40, 50, 60, 75, 90};
+
 
 // Възможни обороти за различните програми
-const int testSpin[] = {400, 800, 1000, 1200, 1400}; 
-const int cottonSpin[] = {400, 800, 1000, 1200, 1400};
-const int syntheticSpin[] = {400, 800, 1000};
-const int woolSpin[] = {400, 800};
-const int handwashSpin[] = {400};
+const int cottonECOSpin[] = {0, 400, 600, 800, 1000, 1200, 1400, 1600};
+const int cottonSpin[] = {0, 400, 600, 800, 1000, 1200, 1400, 1600};
+
 
 // Дефиниране на програмите
 WashProgram programs[] = {
+{"Cotton ECO", cottonECOTemp, sizeof(cottonECOTemp)/sizeof(cottonECOTemp[0]), 
+                 cottonECOSpin, sizeof(cottonECOSpin)/sizeof(cottonECOSpin[0]), 
+                 118*60000, 12*60000, 5},
 
+{"Cotton", cottonTemp, sizeof(cottonTemp)/sizeof(cottonTemp[0]), 
+                 cottonSpin, sizeof(cottonSpin)/sizeof(cottonSpin[0]), 
+                 118*60000, 12*60000, 5}
+};
 
-{"Test", cottonTemp, 4, cottonSpin, 5, 84000, 7000, 8},
-{"White Cotton", cottonTemp, 4, cottonSpin, 5, 84*60000, 15*60000, 8},    // 45 мин пране, 10 мин центрофуга
-{"Color Cotton", cottonTemp, 4, cottonSpin, 5, 72*60000, 15*60000, 7},    // 40 мин пране, 10 мин центрофуга
-{"Synthetic", syntheticTemp, 3, syntheticSpin, 3, 60*60000, 12*60000, 6},  // 35 мин пране, 8 мин центрофуга
- {"Wool", woolTemp, 2, woolSpin, 2, 40*60000, 5*60000, 4},                 // 30 мин пране, 5 мин центрофуга
-    {"Hand Wash", handwashTemp, 1, handwashSpin, 1, 30*60000, 4*60000, 3}     // 25 мин пране, 3 мин центрофуга
- };
+ 
 
 // Структура за меню опция
 struct MenuItem {
@@ -190,10 +187,10 @@ struct PhaseConfig {
 const PhaseConfig phaseConfigs[] = {
   {"Soak",         0.10, false},  // SOAK
   {"Pre-wash",     0.15, false},  // PRE_WASH
-  {"Pre-spin",     0.30, true},   // PRE_WASH_SPIN
+  {"Pre-wash, spin",     0.30, true},   // PRE_WASH_SPIN
   {"Main wash",    0.30, false},  // MAIN_WASH
   {"Cooling",      0.05, false},  // COOLING
-  {"Main spin",    0.50, true},   // MAIN_WASH_SPIN
+  {"Main wash, spin",    0.50, true},   // MAIN_WASH_SPIN
   {"Rinse 1",      0.10, false},  // RINSE_1
   {"Rinse 1 spin", 0.40, true},   // RINSE_1_SPIN
   {"Rinse 2",      0.10, false},  // RINSE_2
@@ -215,7 +212,7 @@ const WashPhase washPhases[] = {
   RINSE_1,
   RINSE_1_SPIN,
   RINSE_2,
-  RINSE_2_SPIN,
+ // RINSE_2_SPIN,
  // RINSE_3,
   DRAIN,
   FINAL_SPIN,
