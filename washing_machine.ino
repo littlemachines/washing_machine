@@ -102,12 +102,14 @@ struct WashProgram {
 };
 
 // Възможни температури за различните програми
+const int testTemp[] = {30};
 const int cottonTemp[] = {30, 40, 60, 95};
 const int syntheticTemp[] = {30, 40, 60};
 const int woolTemp[] = {30, 40};
 const int handwashTemp[] = {30};
 
 // Възможни обороти за различните програми
+const int testSpin[] = {400, 800, 1000, 1200, 1400}; 
 const int cottonSpin[] = {400, 800, 1000, 1200, 1400};
 const int syntheticSpin[] = {400, 800, 1000};
 const int woolSpin[] = {400, 800};
@@ -115,20 +117,15 @@ const int handwashSpin[] = {400};
 
 // Дефиниране на програмите
 WashProgram programs[] = {
-  // -- TEST VALUES - uncomment to use
-  {"White Cotton", cottonTemp, 4, cottonSpin, 5, 45000, 10000, 8},    // 45 мин пране, 10 мин центрофуга
-  {"Color Cotton", cottonTemp, 4, cottonSpin, 5, 40*60000, 10*60000, 7},    // 40 мин пране, 10 мин центрофуга
-  {"Synthetic", syntheticTemp, 3, syntheticSpin, 3, 35*60000, 8*60000, 6},  // 35 мин пране, 8 мин центрофуга
-  {"Wool", woolTemp, 2, woolSpin, 2, 30*60000, 5*60000, 4},                 // 30 мин пране, 5 мин центрофуга
-  {"Hand Wash", handwashTemp, 1, handwashSpin, 1, 25*60000, 3*60000, 3}     // 25 мин пране, 3 мин центрофуга
 
-  // - REAL VALUES - uncomment to use
-  // {"White Cotton", cottonTemp, 4, cottonSpin, 5, 45*60000, 10*60000, 8},    // 45 мин пране, 10 мин центрофуга
-  // {"Color Cotton", cottonTemp, 4, cottonSpin, 5, 40*60000, 10*60000, 7},    // 40 мин пране, 10 мин центрофуга
-  // {"Synthetic", syntheticTemp, 3, syntheticSpin, 3, 35*60000, 8*60000, 6},  // 35 мин пране, 8 мин центрофуга
-  // {"Wool", woolTemp, 2, woolSpin, 2, 30*60000, 5*60000, 4},                 // 30 мин пране, 5 мин центрофуга
-  // {"Hand Wash", handwashTemp, 1, handwashSpin, 1, 25*60000, 3*60000, 3}     // 25 мин пране, 3 мин центрофуга
-};
+
+{"Test", cottonTemp, 4, cottonSpin, 5, 84000, 7000, 8},
+{"White Cotton", cottonTemp, 4, cottonSpin, 5, 84*60000, 15*60000, 8},    // 45 мин пране, 10 мин центрофуга
+{"Color Cotton", cottonTemp, 4, cottonSpin, 5, 72*60000, 15*60000, 7},    // 40 мин пране, 10 мин центрофуга
+{"Synthetic", syntheticTemp, 3, syntheticSpin, 3, 60*60000, 12*60000, 6},  // 35 мин пране, 8 мин центрофуга
+ {"Wool", woolTemp, 2, woolSpin, 2, 40*60000, 5*60000, 4},                 // 30 мин пране, 5 мин центрофуга
+    {"Hand Wash", handwashTemp, 1, handwashSpin, 1, 30*60000, 4*60000, 3}     // 25 мин пране, 3 мин центрофуга
+ };
 
 // Структура за меню опция
 struct MenuItem {
@@ -156,7 +153,7 @@ MenuItem optionsMenu[] = {
   {"Quick wash", &washOptions.quickWash}
 };
 
-// Глобални променливи за текущото състояние
+// Гл��бални променливи за текущото състояние
 MenuState currentState = PROGRAM_SELECT;
 int selectedProgram = 0;
 int selectedTemp = 0;
@@ -166,12 +163,23 @@ bool standbyMode = true;
 
 // Фази на пране
 const char* washPhases[] = {
-  "Main wash",
-  "Rinse 1",
-  "Rinse 2",
-  "Softener rinse",
-  "Spin",
-  "Anti-wrinkle"
+ "Soak",
+ "Pre-wash",
+ "Pre-wash, Spin",
+ "Washing",
+  "Cooling",
+  "Washing, Spin",
+  "Rinsing",
+  "Rinsing, Spin",
+  "Rinsing",
+  "Rinsing, Spin",
+  "Rinsing",
+"Drainage",
+"Spinning",
+"Anti-wrinkle",
+
+
+
 };
 int currentPhase = 0;
 
@@ -357,7 +365,7 @@ void updateLED() {
 void runWashCycle() {
  static unsigned long washStartTime = 0;
  static unsigned long lastMove = 0;
- static int direction = 1;
+ static int direction = 0;
  
  if (washStartTime == 0) {
    washStartTime = millis();
@@ -377,31 +385,73 @@ void runWashCycle() {
  }
 
  unsigned long phaseTime;
- if (currentPhase == 4) {
-   phaseTime = totalSpinTime;
- } else {
-   phaseTime = totalWashTime / (sizeof(washPhases)   ); 
+ // Задаваме различни времена според фазата
+ switch (currentPhase) {
+   case 0:  // Накисване
+     phaseTime = totalWashTime * 0.1;  // 10% от времето
+     break;
+   case 1:  // Предпране
+     phaseTime = totalWashTime * 0.15;  // 15% от времето
+     break;
+   case 2:  // Предпране, центрофуга
+     phaseTime = totalSpinTime * 0.3;  // 30% от времето за центрофуга
+     break;
+   case 3:  // Пране
+     phaseTime = totalWashTime * 0.3;  // 30% от времето
+     break;
+   case 4:  // Охлаждане
+     phaseTime = totalWashTime * 0.05;  // 5% от времето
+     break;
+   case 5:  // Пране, центрофуга
+     phaseTime = totalSpinTime * 0.5;  // 50% от времето за центрофуга
+     break;
+   case 6:  // Изплакване
+   case 8:
+   case 10: // Всички изплаквания
+     phaseTime = totalWashTime * 0.1;  // 10% от времето
+     break;
+   case 7:
+   case 9:  // Изплакване, центрофуга
+     phaseTime = totalSpinTime * 0.4;  // 40% от времето за центрофуга
+     break;
+   case 11: // Източване
+     phaseTime = totalWashTime * 0.05;  // 5% от времето
+     break;
+   case 12: // Финална центрофуга
+     phaseTime = totalSpinTime;  // Пълното време за центрофуга
+     break;
+   case 13: // Против намачкване
+     phaseTime = totalWashTime * 0.1;  // 10% от времето
+     break;
+   default:
+     phaseTime = totalWashTime * 0.1;  // По подразбиране 10% от времето
  }
  
  unsigned long elapsedTime = millis() - washStartTime;
  if (elapsedTime >= phaseTime) {
-    // Стоп за малко като сменяме фазите
-    washingDrum.writeMicroseconds(1500); // Ширина 1.5 ms
+    washingDrum.writeMicroseconds(1500);
     delay(2000);
-   currentPhase++;
-   washStartTime = millis();
+    currentPhase++;
+    washStartTime = millis();
    
-   if (currentPhase >= 5) {
-     isWashing = false;
-     washingDrum.write(90);
-     currentPhase = 0;
-     updateDisplay();
-     return;
-   }
-   updateDisplay();
+    if (currentPhase >= sizeof(washPhases)/sizeof(washPhases[0])) {
+      isWashing = false;
+      washingDrum.write(90);
+      currentPhase = 0;
+      
+      oled.clearDisplay();
+      oled.printInYellowSection("Finished!", 0);
+      oled.printInYellowSection(":-)", 1);
+      oled.sendBuffer();
+      delay(3000);
+      
+      updateDisplay();
+      return;
+    }
+    updateDisplay();
  }
  
- if (currentPhase == 4) { // Центрофуга
+ if (currentPhase == 2 || currentPhase == 5 || currentPhase == 7 || currentPhase == 9 || currentPhase == 12) { // Центрофуга
     washingDrum.writeMicroseconds(1000); // Постоянна максимална скорост в една посока
  } else if (millis() - lastMove > 500) {
   // тия долу са бъгави, трябва да ги оправим някак си
@@ -568,7 +618,7 @@ void displayWashing() {
   snprintf(buffer, sizeof(buffer), "Phase: %s", 
            washPhases[currentPhase]);
   oled.printInBlueSection(buffer, 2);
-  
+
   // Активни опции
   char optionsBuffer[21] = "Options: ";
   if (washOptions.preWash) strcat(optionsBuffer, "P");
