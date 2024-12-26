@@ -120,7 +120,7 @@ WashProgram programs[] = {
   // {"Synthetic", syntheticTemp, 3, syntheticSpin, 3, 1*60000, 8*60000, 6},  // 35 мин пране, 8 мин центрофуга
   // {"Wool", woolTemp, 2, woolSpin, 2, 1*60000, 5*60000, 4},                 // 30 мин пране, 5 мин центрофуга
   // {"Hand Wash", handwashTemp, 1, handwashSpin, 1, 1*60000, 3*60000, 3}     // 25 мин пране, 3 мин центрофуга
-  {"White Cotton", cottonTemp, 4, cottonSpin, 5, 45*60000, 10*60000, 8},    // 45 мин пране, 10 мин центрофуга
+  {"White Cotton", cottonTemp, 4, cottonSpin, 5, 45000, 10000, 8},    // 45 мин пране, 10 мин центрофуга
   {"Color Cotton", cottonTemp, 4, cottonSpin, 5, 40*60000, 10*60000, 7},    // 40 мин пране, 10 мин центрофуга
   {"Synthetic", syntheticTemp, 3, syntheticSpin, 3, 35*60000, 8*60000, 6},  // 35 мин пране, 8 мин центрофуга
   {"Wool", woolTemp, 2, woolSpin, 2, 30*60000, 5*60000, 4},                 // 30 мин пране, 5 мин центрофуга
@@ -163,11 +163,12 @@ bool standbyMode = true;
 
 // Фази на пране
 const char* washPhases[] = {
-  "Pre-wash",
   "Main wash",
-  "Rinse",
+  "Rinse 1",
+  "Rinse 2",
+  "Softener rinse",
   "Spin",
-  "Final rinse"
+  "Anti-wrinkle"
 };
 int currentPhase = 0;
 
@@ -373,10 +374,10 @@ void runWashCycle() {
  }
 
  unsigned long phaseTime;
- if (currentPhase == 3) {
+ if (currentPhase == 4) {
    phaseTime = totalSpinTime;
  } else {
-   phaseTime = totalWashTime / (sizeof(washPhases) -1); 
+   phaseTime = totalWashTime / (sizeof(washPhases)   ); 
  }
  
  unsigned long elapsedTime = millis() - washStartTime;
@@ -397,7 +398,7 @@ void runWashCycle() {
    updateDisplay();
  }
  
- if (currentPhase == 3) { // Центрофуга
+ if (currentPhase == 4) { // Центрофуга
     washingDrum.writeMicroseconds(1000); // Постоянна максимална скорост в една посока
  } else if (millis() - lastMove > 500) {
   // тия долу са бъгави, трябва да ги оправим някак си
