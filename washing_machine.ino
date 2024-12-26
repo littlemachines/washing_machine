@@ -104,12 +104,15 @@ struct WashProgram {
 // Възможни температури за различните програми
 const int cottonECOTemp[] = {40, 60};
 const int cottonTemp[] = {0, 20, 30, 40, 50, 60, 75, 90};
+const int ECOTemp[] = {};
+const int MinimumironTemp[] = {0, 20, 30, 40, 50, 60};
 
 
 // Възможни обороти за различните програми
 const int cottonECOSpin[] = {0, 400, 600, 800, 1000, 1200, 1400, 1600};
 const int cottonSpin[] = {0, 400, 600, 800, 1000, 1200, 1400, 1600};
-
+const int ECOSpin[] = {0, 400, 600, 800, 1000, 1200, 1400, 1600};
+const int MinimumironSpin[] = {0, 400, 600, 800, 1000, 1200};
 
 // Дефиниране на програмите
 WashProgram programs[] = {
@@ -119,7 +122,11 @@ WashProgram programs[] = {
 
 {"Cotton", cottonTemp, sizeof(cottonTemp)/sizeof(cottonTemp[0]), 
                  cottonSpin, sizeof(cottonSpin)/sizeof(cottonSpin[0]), 
-                 118*60000, 12*60000, 5}
+                 118*60000, 12*60000, 5},
+{"ECO", ECOTemp, 0, ECOSpin, 8, 115000, 11*60000, 5},
+{"Minimum iron", MinimumironTemp, 6, MinimumironSpin, 6, 76*60000, 4*60000, 5}
+
+
 };
 
  
