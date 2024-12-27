@@ -465,7 +465,7 @@ void runWashCycle() {
   if (currentPhaseConfig.isSpinPhase) {
     phaseTime = programs[selectedProgram].baseSpinTime * currentPhaseConfig.timePercent;
     
-    int safeSpinSpeed = min(programs[selectedProgram].spins[selectedSpin], 1000);
+    int safeSpinSpeed = min(programs[selectedProgram].spins[selectedSpin], 1600);
     int spinSpeed = 1500 + (safeSpinSpeed /2);
     washingDrum.writeMicroseconds(spinSpeed);
   } else {
