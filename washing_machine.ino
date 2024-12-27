@@ -81,7 +81,7 @@ DualColorOLED oled(YELLOW_ROWS, BLUE_ROWS, CHAR_HEIGHT); // 2 жълти ред�
 // Създаване на обект за серво мотора
 Servo washingDrum;
 
-// Структура за допълнителни опции
+// Структура за допълнителни опц��и
 struct WashOptions {
   bool preWash;
   bool extraWater;
@@ -106,27 +106,46 @@ const int cottonECOTemp[] = {40, 60};
 const int cottonTemp[] = {0, 20, 30, 40, 50, 60, 75, 90};
 const int ECOTemp[] = {};
 const int MinimumironTemp[] = {0, 20, 30, 40, 50, 60};
-
-
+const int ShirtsTemp[] = {0, 20, 30, 40};
+const int JeansTemp[] = {0, 20, 30, 40};
+const int DelicatesTemp[] = {0, 20, 30, 40, 50, 60};
+const int WoollensTemp[] = {0, 20, 30, 40};
+const int SilksTemp[] = {0, 20, 30};
+const int PillowsTemp[] = {0, 20, 30, 40, 50, 60};
+const int DownfilleditemsTemp[] = {0, 20, 30, 40, 50, 60};
+const int TrainersTemp[] = {0, 20, 30, 40};
 // Възможни обороти за различните програми
 const int cottonECOSpin[] = {0, 400, 600, 800, 1000, 1200, 1400, 1600};
 const int cottonSpin[] = {0, 400, 600, 800, 1000, 1200, 1400, 1600};
 const int ECOSpin[] = {0, 400, 600, 800, 1000, 1200, 1400, 1600};
 const int MinimumironSpin[] = {0, 400, 600, 800, 1000, 1200};
-
-// Дефиниране на програмите
+const int ShirtsSpin[] = {400, 600, 900};
+const int JeansSpin[] = {0, 400, 600, 900};
+const int DelicatesSpin[] = {0, 400, 600, 900};
+const int WoollensSpin[] = {0, 400, 600, 800, 1000, 1200};
+const int SilksSpin[] = {0, 400, 600};
+const int PillowsSpin[] {0, 400, 600, 800, 1000, 1200};
+const int DownfilleditemsSpin[] = {0, 400, 600, 800, 1000, 1200};
+const int TrainersSpin[] = {0, 600};
+// Дефиниране на п��ограмите
 WashProgram programs[] = {
 {"Cotton ECO", cottonECOTemp, sizeof(cottonECOTemp)/sizeof(cottonECOTemp[0]), 
                  cottonECOSpin, sizeof(cottonECOSpin)/sizeof(cottonECOSpin[0]), 
-                 118*60000, 12*60000, 5},
+                 106*60000, 12*60000, 5},
 
 {"Cotton", cottonTemp, sizeof(cottonTemp)/sizeof(cottonTemp[0]), 
                  cottonSpin, sizeof(cottonSpin)/sizeof(cottonSpin[0]), 
-                 118*60000, 12*60000, 5},
-{"ECO", ECOTemp, 0, ECOSpin, 8, 115000, 11*60000, 5},
-{"Minimum iron", MinimumironTemp, 6, MinimumironSpin, 6, 76*60000, 4*60000, 5}
-
-
+                 74*60000, 11*60000, 5},
+{"ECO", ECOTemp, 0, ECOSpin, 8, 104*60000, 11*60000, 5},
+{"Minimum iron", MinimumironTemp, 6, MinimumironSpin, 6, 76*60000, 4*60000, 5},
+{"Shirts", ShirtsTemp, 4, ShirtsSpin, 3, 76*60000, 4*60000, 5},
+{"Jeans", JeansTemp, 4, JeansSpin, 4, 76*60000, 6*60000},
+{"Delicates", DelicatesTemp, 6, DelicatesSpin, 4, 54*60000, 5*60000},
+{"Woollens", WoollensTemp, 4, WoollensSpin, 6, 36*60000, 3*60000},
+{"Silks", SilksTemp, 3, SilksSpin, 3, 33*60000, 3*60000},
+{"Pillows", PillowsTemp, 6, PillowsSpin, 6, 76*60000, 6*60000},
+{"Down filled items", DownfilleditemsTemp, 6, DownfilleditemsSpin, 6, 54*60000, 6*60000},
+{"Trainers", TrainersTemp, 4, TrainersSpin, 2, 54*60000, 3*60000}
 };
 
  
@@ -157,7 +176,7 @@ MenuItem optionsMenu[] = {
   {"Quick wash", &washOptions.quickWash}
 };
 
-// Гобални променливи за текущото състояние
+// Гобални п��оменливи за текущото състояние
 MenuState currentState = PROGRAM_SELECT;
 int selectedProgram = 0;
 int selectedTemp = 0;
@@ -180,7 +199,8 @@ enum WashPhase {
   RINSE_3,           // Трето изплакване
   DRAIN,             // Източване
   FINAL_SPIN,        // Финална центрофуга
-  ANTI_WRINKLE       // Против намачкване
+  ANTI_WRINKLE,      // Против намачкване
+  STEAM              // Пара
 };
 
 // Структура за конфигурация на фаза
@@ -190,7 +210,7 @@ struct PhaseConfig {
   bool isSpinPhase;
 };
 
-// Конфигурации за всички ф��зи
+// Конфигурации за всички фзи
 const PhaseConfig phaseConfigs[] = {
   {"Soak",         0.10, false},  // SOAK
   {"Pre-wash",     0.15, false},  // PRE_WASH
@@ -203,9 +223,10 @@ const PhaseConfig phaseConfigs[] = {
   {"Rinse 2",      0.10, false},  // RINSE_2
   {"Rinse 2 spin", 0.40, true},   // RINSE_2_SPIN
   {"Rinse 3",      0.10, false},  // RINSE_3
-  {"Drain",        0.05, false},  // DRAIN
+  {"Drain",        0.01, false},  // DRAIN
   {"Final spin",   1.00, true},   // FINAL_SPIN
-  {"Anti-wrinkle", 0.10, false}   // ANTI_WRINKLE
+  {"Anti-wrinkle", 0.10, false},  // ANTI_WRINKLE
+  {"Steam", 0.30, false} // STEAM
 };
 
 // Активни фази в текущия цикъл на пране (тук можете лесно да добавяте/премахвате фази)
@@ -223,8 +244,10 @@ const WashPhase washPhases[] = {
  // RINSE_3,
   DRAIN,
   FINAL_SPIN,
-  ANTI_WRINKLE
+  ANTI_WRINKLE,
+//  STEAM
 };
+
 
 int currentPhase = 0;
 
@@ -232,7 +255,7 @@ int currentPhase = 0;
 unsigned long washStartTime = 0;
 
 void setup() {
-  // Стартираме серийния п��инт
+  // Стартираме серийния принт
   Serial.begin(9600); // open the serial port at 9600 bps:
   Serial.println("Program started");
 
@@ -415,14 +438,35 @@ void runWashCycle() {
 
   const PhaseConfig& currentPhaseConfig = phaseConfigs[washPhases[currentPhase]];
   
+  // Ако сме в spin фаза и оборотите са 0, преминаваме към следващата фаза
+  if (currentPhaseConfig.isSpinPhase && programs[selectedProgram].spins[selectedSpin] == 0) {
+    currentPhase++;
+    washStartTime = millis();
+    
+    // Проверяваме дали сме стигнали края на програмата
+    if (currentPhase >= sizeof(washPhases)/sizeof(washPhases[0])) {
+      isWashing = false;
+      washingDrum.writeMicroseconds(1500);
+      currentPhase = 0;
+      
+      oled.clearDisplay();
+      oled.printInYellowSection("Finished!", 0);
+      oled.printInYellowSection(":-)", 1);
+      oled.sendBuffer();
+      delay(3000);
+      
+      updateDisplay();
+      return;
+    }
+    return;
+  }
+  
   unsigned long phaseTime;
   if (currentPhaseConfig.isSpinPhase) {
     phaseTime = programs[selectedProgram].baseSpinTime * currentPhaseConfig.timePercent;
     
-    // Изчисляваме скоростта пропорционално на избраните обороти
-    // 1400 оборота = 2900 микросекунди
-    // Използваме формулата: (избрани_обороти * 2900) / 1400
-    int spinSpeed = 1500 + (programs[selectedProgram].spins[selectedSpin] / 2);
+    int safeSpinSpeed = min(programs[selectedProgram].spins[selectedSpin], 1000);
+    int spinSpeed = 1500 + (safeSpinSpeed /2);
     washingDrum.writeMicroseconds(spinSpeed);
   } else {
     phaseTime = programs[selectedProgram].baseWashTime * currentPhaseConfig.timePercent;
