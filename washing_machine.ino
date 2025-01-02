@@ -81,7 +81,7 @@ DualColorOLED oled(YELLOW_ROWS, BLUE_ROWS, CHAR_HEIGHT); // 2 жълти ред�
 // Създаване на обект за серво мотора
 Servo washingDrum;
 
-// Структура за допълнителни опц��и
+// Структура за допълнителни опции
 struct WashOptions {
   bool preWash;
   bool extraWater;
@@ -127,7 +127,7 @@ const int SilksSpin[] = {0, 400, 600};
 const int PillowsSpin[] {0, 400, 600, 800, 1000, 1200};
 const int DownfilleditemsSpin[] = {0, 400, 600, 800, 1000, 1200};
 const int TrainersSpin[] = {0, 600};
-// Дефиниране на п��ограмите
+// Дефиниране на програмите
 WashProgram programs[] = {
 {"Cotton ECO", cottonECOTemp, sizeof(cottonECOTemp)/sizeof(cottonECOTemp[0]), 
                  cottonECOSpin, sizeof(cottonECOSpin)/sizeof(cottonECOSpin[0]), 
@@ -176,7 +176,7 @@ MenuItem optionsMenu[] = {
   {"Quick wash", &washOptions.quickWash}
 };
 
-// Гобални п��оменливи за текущото състояние
+// Гобални променливи за текущото състояние
 MenuState currentState = PROGRAM_SELECT;
 int selectedProgram = 0;
 int selectedTemp = 0;
@@ -306,6 +306,76 @@ void loop() {
   delay(100);
 }
 
+void runWashCycle() {
+    if (!isWashing) return;
+
+    const PhaseConfig& currentPhaseConfig = phaseConfigs[washPhases[currentPhase]];
+    
+    if (shouldSkipSpinPhase(currentPhaseConfig)) {
+        moveToNextPhase();
+        return;
+    }
+    
+    unsigned long phaseTime = calculatePhaseTime(currentPhaseConfig);
+    updateDrumMovement(currentPhaseConfig);
+    
+    if (isPhaseComplete()) {
+        handlePhaseCompletion();
+    }
+}
+
+// Помощни функции за runWashCycle
+bool shouldSkipSpinPhase(const PhaseConfig& phaseConfig) {
+    return phaseConfig.isSpinPhase && programs[selectedProgram].spins[selectedSpin] == 0;
+}
+
+unsigned long calculatePhaseTime(const PhaseConfig& phaseConfig) {
+    if (phaseConfig.isSpinPhase) {
+        return programs[selectedProgram].baseSpinTime * phaseConfig.timePercent;
+    }
+    return programs[selectedProgram].baseWashTime * phaseConfig.timePercent;
+}
+
+void updateDrumMovement(const PhaseConfig& phaseConfig) {
+    if (phaseConfig.isSpinPhase) {
+        int safeSpinSpeed = min(programs[selectedProgram].spins[selectedSpin], 1600);
+        int spinSpeed = 1500 + (safeSpinSpeed / 2);
+        washingDrum.writeMicroseconds(spinSpeed);
+    } else {
+        washingDrum.writeMicroseconds(1300);
+    }
+}
+
+bool isPhaseComplete() {
+    return (millis() - washStartTime) >= calculatePhaseTime(phaseConfigs[washPhases[currentPhase]]);
+}
+
+void handlePhaseCompletion() {
+    washingDrum.writeMicroseconds(1500);
+    delay(2000);
+    moveToNextPhase();
+}
+
+void moveToNextPhase() {
+    currentPhase++;
+    washStartTime = millis();
+   
+    if (currentPhase >= sizeof(washPhases)/sizeof(washPhases[0])) {
+        finishWashCycle();
+        return;
+    }
+    updateDisplay();
+}
+
+void finishWashCycle() {
+    isWashing = false;
+    washingDrum.writeMicroseconds(1500);
+    currentPhase = 0;
+    
+    displayFinishMessage();
+    updateDisplay();
+}
+
 void handleButtons() {
   // Четене на състоянието на бутоните
   bool startPressed = !digitalRead(BUTTON_START);
@@ -433,69 +503,12 @@ void updateLED() {
   }
 }
 
-void runWashCycle() {
-  if (!isWashing) return;
-
-  const PhaseConfig& currentPhaseConfig = phaseConfigs[washPhases[currentPhase]];
-  
-  // Ако сме в spin фаза и оборотите са 0, преминаваме към следващата фаза
-  if (currentPhaseConfig.isSpinPhase && programs[selectedProgram].spins[selectedSpin] == 0) {
-    currentPhase++;
-    washStartTime = millis();
-    
-    // Проверяваме дали сме стигнали края на програмата
-    if (currentPhase >= sizeof(washPhases)/sizeof(washPhases[0])) {
-      isWashing = false;
-      washingDrum.writeMicroseconds(1500);
-      currentPhase = 0;
-      
-      oled.clearDisplay();
-      oled.printInYellowSection("Finished!", 0);
-      oled.printInYellowSection(":-)", 1);
-      oled.sendBuffer();
-      delay(3000);
-      
-      updateDisplay();
-      return;
-    }
-    return;
-  }
-  
-  unsigned long phaseTime;
-  if (currentPhaseConfig.isSpinPhase) {
-    phaseTime = programs[selectedProgram].baseSpinTime * currentPhaseConfig.timePercent;
-    
-    int safeSpinSpeed = min(programs[selectedProgram].spins[selectedSpin], 1600);
-    int spinSpeed = 1500 + (safeSpinSpeed /2);
-    washingDrum.writeMicroseconds(spinSpeed);
-  } else {
-    phaseTime = programs[selectedProgram].baseWashTime * currentPhaseConfig.timePercent;
-    washingDrum.writeMicroseconds(1300);
-  }
- 
-  unsigned long elapsedTime = millis() - washStartTime;
-  if (elapsedTime >= phaseTime) {
-    washingDrum.writeMicroseconds(1500);
-    delay(2000);
-    currentPhase++;
-    washStartTime = millis();
-   
-    if (currentPhase >= sizeof(washPhases)/sizeof(washPhases[0])) {
-      isWashing = false;
-      washingDrum.writeMicroseconds(1500);
-      currentPhase = 0;
-      
-      oled.clearDisplay();
-      oled.printInYellowSection("Finished!", 0);
-      oled.printInYellowSection(":-)", 1);
-      oled.sendBuffer();
-      delay(3000);
-      
-      updateDisplay();
-      return;
-    }
-    updateDisplay();
-  }
+void displayFinishMessage() {
+    oled.clearDisplay();
+    oled.printInYellowSection("Finished!", 0);
+    oled.printInYellowSection(":-)", 1);
+    oled.sendBuffer();
+    delay(3000);
 }
 
 void updateDisplay() {
