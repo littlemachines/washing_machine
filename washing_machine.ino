@@ -240,8 +240,8 @@ const WashPhase washPhases[] = {
   RINSE_1,
   RINSE_1_SPIN,
   RINSE_2,
- // RINSE_2_SPIN,
- // RINSE_3,
+  RINSE_2_SPIN,
+  RINSE_3,
   DRAIN,
   FINAL_SPIN,
   ANTI_WRINKLE,
@@ -253,6 +253,28 @@ int currentPhase = 0;
 
 // В началото на файла с другите глобални променливи
 unsigned long washStartTime = 0;
+
+// Константи за серво мотора
+const int SERVO_STOP = 1500;      // Централна позиция (стоп)
+const int INITIAL_RAMP = 5000;    // 5 секунди за ускорение
+const int SLOW_RAMP = 120000;      // 120 секунди за бавно ускорение
+const int WASH_SPEED = 100;       // Скорост за нормално пране
+
+// Константи за междинните центрофуги
+const int VERY_LOW_SPIN = 100;    // Много ниски обороти в началото
+const int INITIAL_SPIN = 500;     // Първо ниво
+const int MEDIUM_SPIN = 700;      // Второ ниво
+const int MAX_INTERIM_SPIN = 1000; // Максимум за междинни центрофуги
+
+// Константи за финалната центрофуга
+const int FINAL_INITIAL_SPIN = 900;  // Начално ниво за финална центрофуга
+const int FINAL_MEDIUM_SPIN = 1200;  // Средно ниво за финална центрофуга
+
+// Времена за задържане
+const unsigned long VERY_LOW_HOLD = 7000;  // 5 секунди на много ниски обороти
+const unsigned long HOLD_TIME = 30000;     // 30 секунди задържане
+const unsigned long FINAL_HOLD_900_TIME = 120000;  // 2 минути за финална
+const unsigned long FINAL_HOLD_1200_TIME = 180000; // 3 минути за финална
 
 void setup() {
   // Стартираме серийния принт
@@ -337,13 +359,118 @@ unsigned long calculatePhaseTime(const PhaseConfig& phaseConfig) {
 }
 
 void updateDrumMovement(const PhaseConfig& phaseConfig) {
-    if (phaseConfig.isSpinPhase) {
-        int safeSpinSpeed = min(programs[selectedProgram].spins[selectedSpin], 1600);
-        int spinSpeed = 1500 + (safeSpinSpeed / 2);
-        washingDrum.writeMicroseconds(spinSpeed);
-    } else {
-        washingDrum.writeMicroseconds(1300);
+    static unsigned long lastSpinTime = 0;
+    unsigned long currentTime = millis();
+    
+    if (!phaseConfig.isSpinPhase) {
+        // Нормално пране - редуване на посоката на всеки 5 секунди
+        if ((currentTime / 5000) % 2 == 0) {
+            washingDrum.writeMicroseconds(SERVO_STOP + WASH_SPEED);
+        } else {
+            washingDrum.writeMicroseconds(SERVO_STOP - WASH_SPEED);
+        }
+        lastSpinTime = currentTime;
+        return;
     }
+
+    // Центрофуга
+    if (lastSpinTime == 0) {
+        lastSpinTime = currentTime;
+    }
+
+    unsigned long elapsedTime = currentTime - lastSpinTime;
+    int targetSpeed = programs[selectedProgram].spins[selectedSpin];
+    int currentSpeed;
+
+    // Проверяваме дали това е финалната центрофуга или Rinse 2 spin
+    bool isFinalSpin = (currentPhase == sizeof(washPhases)/sizeof(washPhases[0]) - 2);
+    bool isRinse2Spin = (strcmp(phaseConfig.name, "Rinse 2 spin") == 0);
+
+    if (isFinalSpin) {
+        // Логика за финалната центрофуга
+        if (elapsedTime < VERY_LOW_HOLD) {
+            // Започваме с много ниски обороти
+            currentSpeed = VERY_LOW_SPIN;
+        }
+        else if (elapsedTime < VERY_LOW_HOLD + INITIAL_RAMP) {
+            // Плавно до 900
+            float progress = (float)(elapsedTime - VERY_LOW_HOLD) / INITIAL_RAMP;
+            currentSpeed = (int)(FINAL_INITIAL_SPIN * progress);
+        }
+        else if (elapsedTime < VERY_LOW_HOLD + INITIAL_RAMP + FINAL_HOLD_900_TIME) {
+            // Задържане на 900
+            currentSpeed = FINAL_INITIAL_SPIN;
+        }
+        else if (elapsedTime < VERY_LOW_HOLD + INITIAL_RAMP + FINAL_HOLD_900_TIME + 5000) {
+            // Плавно до 1200
+            float progress = (float)(elapsedTime - (VERY_LOW_HOLD + INITIAL_RAMP + FINAL_HOLD_900_TIME)) / 5000;
+            currentSpeed = FINAL_INITIAL_SPIN + (int)((FINAL_MEDIUM_SPIN - FINAL_INITIAL_SPIN) * progress);
+        }
+        else if (elapsedTime < VERY_LOW_HOLD + INITIAL_RAMP + FINAL_HOLD_900_TIME + 5000 + FINAL_HOLD_1200_TIME) {
+            // Задържане на 1200
+            currentSpeed = FINAL_MEDIUM_SPIN;
+        }
+        else if (elapsedTime < VERY_LOW_HOLD + INITIAL_RAMP + FINAL_HOLD_900_TIME + 10000 + FINAL_HOLD_1200_TIME) {
+            // Плавно до целевите обороти
+            float progress = (float)(elapsedTime - (VERY_LOW_HOLD + INITIAL_RAMP + FINAL_HOLD_900_TIME + 5000 + FINAL_HOLD_1200_TIME)) / 5000;
+            currentSpeed = FINAL_MEDIUM_SPIN + (int)((targetSpeed - FINAL_MEDIUM_SPIN) * progress);
+        }
+        else {
+            currentSpeed = targetSpeed;
+        }
+    } else if (isRinse2Spin) {
+        // Специална логика за Rinse 2 spin с бавно ускорение
+        if (elapsedTime < VERY_LOW_HOLD) {
+            // Започваме с много ниски обороти
+            currentSpeed = VERY_LOW_SPIN;
+        }
+        else if (elapsedTime < VERY_LOW_HOLD + SLOW_RAMP) {
+            // Много бавно ускорение до 1000
+            float progress = (float)(elapsedTime - VERY_LOW_HOLD) / SLOW_RAMP;
+            currentSpeed = VERY_LOW_SPIN + (int)((MAX_INTERIM_SPIN - VERY_LOW_SPIN) * progress);
+        }
+        else {
+            // Задържане на 1000
+            currentSpeed = MAX_INTERIM_SPIN;
+        }
+    } else {
+        // Логика за останалите междинни центрофуги
+        if (elapsedTime < VERY_LOW_HOLD) {
+            currentSpeed = VERY_LOW_SPIN;
+        }
+        else if (elapsedTime < VERY_LOW_HOLD + INITIAL_RAMP) {
+            float progress = (float)(elapsedTime - VERY_LOW_HOLD) / INITIAL_RAMP;
+            currentSpeed = (int)(INITIAL_SPIN * progress);
+        }
+        else if (elapsedTime < VERY_LOW_HOLD + INITIAL_RAMP + HOLD_TIME) {
+            currentSpeed = INITIAL_SPIN;
+        }
+        else if (elapsedTime < VERY_LOW_HOLD + INITIAL_RAMP + HOLD_TIME + INITIAL_RAMP) {
+            float progress = (float)(elapsedTime - (VERY_LOW_HOLD + INITIAL_RAMP + HOLD_TIME)) / INITIAL_RAMP;
+            currentSpeed = INITIAL_SPIN + (int)((MEDIUM_SPIN - INITIAL_SPIN) * progress);
+        }
+        else if (elapsedTime < VERY_LOW_HOLD + INITIAL_RAMP + HOLD_TIME + INITIAL_RAMP + HOLD_TIME) {
+            currentSpeed = MEDIUM_SPIN;
+        }
+        else if (elapsedTime < VERY_LOW_HOLD + INITIAL_RAMP + HOLD_TIME + INITIAL_RAMP + HOLD_TIME + INITIAL_RAMP) {
+            float progress = (float)(elapsedTime - (VERY_LOW_HOLD + INITIAL_RAMP + HOLD_TIME + INITIAL_RAMP + HOLD_TIME)) / INITIAL_RAMP;
+            currentSpeed = MEDIUM_SPIN + (int)((MAX_INTERIM_SPIN - MEDIUM_SPIN) * progress);
+        }
+        else {
+            currentSpeed = MAX_INTERIM_SPIN;
+        }
+    }
+
+    // Ограничаваме скоростта до целевата
+    if (!isFinalSpin) {
+        currentSpeed = min(currentSpeed, MAX_INTERIM_SPIN);
+    } else if (currentSpeed > targetSpeed) {
+        currentSpeed = targetSpeed;
+    }
+
+    // Преобразуване на оборотите в микросекунди за серво мотора
+    int servoValue = SERVO_STOP + (currentSpeed / 2);
+    washingDrum.writeMicroseconds(servoValue);
 }
 
 bool isPhaseComplete() {
@@ -364,6 +491,11 @@ void moveToNextPhase() {
         finishWashCycle();
         return;
     }
+    
+    // Плавно спиране при смяна на фаза
+    washingDrum.writeMicroseconds(SERVO_STOP);
+    delay(2000);  // Пауза между фазите
+    
     updateDisplay();
 }
 
