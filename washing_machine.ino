@@ -320,8 +320,6 @@ void loop() {
   if (isWashing) {
     runWashCycle();
   }
-
-  Serial.println("End Loop");
   
   // Обновяване на дисплея
   updateDisplay();
@@ -515,8 +513,6 @@ void handleButtons() {
   bool downPressed = !digitalRead(BUTTON_DOWN);
   bool leftPressed = !digitalRead(BUTTON_LEFT);
   bool rightPressed = !digitalRead(BUTTON_RIGHT);
-
-  Serial.println("Checked buttons");
   
   // Обработка според текущото състояние на менюто
   if (startPressed) {
