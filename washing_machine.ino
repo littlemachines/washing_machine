@@ -316,8 +316,6 @@ bool hasPWMError = false;  // Флаг за грешка в PWM сигналит
 unsigned long lastVoltageCheck = 0;
 unsigned long lastServoCheck = 0;
 
-
-
 // Константи за проверка на напрежението
 #define VOLTAGE_CHECK_INTERVAL 1000  // Проверяваме на всяка секунда
 #define MIN_VOLTAGE_VALUE 491       // Намаляме прага под 450
