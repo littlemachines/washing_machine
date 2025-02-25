@@ -313,8 +313,6 @@ bool hasError = false;
 bool hasCodeError = false;
 bool hasVoltageError = false;
 bool hasPWMError = false;  // Флаг за грешка в PWM сигналите
-bool hasComponentError = false;  // Флаг за грешка в компонент
-bool hasServoError = false;  // Флаг за грешка в серво мотора
 unsigned long lastVoltageCheck = 0;
 unsigned long lastServoCheck = 0;
 
@@ -366,7 +364,7 @@ void checkVoltage() {
 
 // Функция за проверка на връзките и кода
 void checkSystem() {
-  bool hadError = hasError || hasCodeError || hasVoltageError || hasPWMError || hasComponentError || hasServoError;  // Запомняме предишното състояние
+  bool hadError = hasError || hasCodeError || hasVoltageError || hasPWMError;  // Запомняме предишното състояние
   
   // Проверка на серво мотора
   if (!washingDrum.attached()) {
@@ -392,7 +390,7 @@ void checkSystem() {
   }
 
   // Ако се появи нова грешка, спираме пералнята
-  if (!hadError && (hasError || hasCodeError || hasVoltageError || hasPWMError || hasComponentError || hasServoError)) {
+  if (!hadError && (hasError || hasCodeError || hasVoltageError || hasPWMError)) {
     stopWashingMachine();
   }
 
@@ -455,7 +453,7 @@ void loop() {
   checkPWM();  // Добавяме проверка на PWM сигналите
 
   // Проверяваме за грешки преди да продължим
-  if (hasError || hasCodeError || hasVoltageError || hasPWMError || hasComponentError || hasServoError) {
+  if (hasError || hasCodeError || hasVoltageError || hasPWMError) {
     updateDisplay();  // Показваме съответната грешка
     updateLED();     // Управляваме LED-овете
     
@@ -778,7 +776,7 @@ void updateLED() {
   if (hasVoltageError) {
     digitalWrite(ERROR_LED_PIN, HIGH);
     digitalWrite(LED_PIN, LOW);
-  } else if (hasCodeError || hasError || hasPWMError || hasComponentError || hasServoError) {
+  } else if (hasCodeError || hasError || hasPWMError) {
     digitalWrite(ERROR_LED_PIN, HIGH);
     digitalWrite(LED_PIN, LOW);
   } else {
@@ -805,10 +803,6 @@ void updateDisplay() {
     displayError("F39");
   } else if (hasPWMError) {
     displayError("F51");
-  } else if (hasComponentError) {
-    displayError("F53");
-  } else if (hasServoError) {
-    displayError("F54");
   } else {
     oled.firstPage();
     do {
