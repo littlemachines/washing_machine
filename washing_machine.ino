@@ -2,6 +2,18 @@
 #include <U8g2lib.h>
 #include <Servo.h>
 
+// Function prototypes
+void stopWashingMachine();
+void checkPWM();
+void checkServoConnection();
+void displayFinishMessage();
+void playFinishMelody();
+void displayError(const char* error);
+void displayProgramSelect();
+void displayTempSelect();
+void displaySpinSelect();
+void displayWashing();
+
 // Дефиниране на пинове
 #define BUTTON_START 2
 #define BUTTON_UP    3
@@ -286,6 +298,9 @@ int currentPhase = 0;
 // В началото на файла с другите глобални променливи
 unsigned long washStartTime = 0;
 
+// Global variables
+int voltageValue = 0;
+
 // Константи за серво мотора
 const int SERVO_STOP = 1500;      // Централна позиция (стоп)
 const int INITIAL_RAMP = 5000;    // 5 секунди за ускорение
@@ -312,7 +327,9 @@ const unsigned long FINAL_HOLD_1200_TIME = 180000; // 3 минути за фин
 bool hasError = false;
 bool hasCodeError = false;
 bool hasVoltageError = false;
-bool hasPWMError = false;  // Флаг за грешка в PWM сигналите
+bool hasPWMError = false;
+bool hasComponentError = false;
+bool hasServoError = false;
 unsigned long lastVoltageCheck = 0;
 unsigned long lastServoCheck = 0;
 
@@ -322,9 +339,9 @@ unsigned long lastServoCheck = 0;
 
 // Променливи за пиукането при грешка
 unsigned long lastBeepMillis = 0;
-const unsigned long ERROR_BEEP_INTERVAL = 1000;  // 1 секунда между пиуканията
-const int ERROR_BEEP_DURATION = 100;            // 100ms продължителност на пиукането
-const int ERROR_BEEP_FREQUENCY = 2000;          // 2kHz честота
+const unsigned long ERROR_BEEP_INTERVAL = 500;  // 1 секунда между пиуканията
+const int ERROR_BEEP_DURATION = 500;            // 100ms продължителност на пиукането
+const int ERROR_BEEP_FREQUENCY = 4186;          // 2kHz честота
 
 // Функция за проверка на захранването
 void checkVoltage() {
@@ -359,12 +376,13 @@ void checkVoltage() {
         digitalWrite(ERROR_LED_PIN, LOW);
       }
     }
+    
   }
 }
 
 // Функция за проверка на връзките и кода
 void checkSystem() {
-  bool hadError = hasError || hasCodeError || hasVoltageError || hasPWMError;  // Запомняме предишното състояние
+  bool hadError = hasError || hasCodeError || hasVoltageError || hasPWMError || hasComponentError || hasServoError;  // Запомняме предишното състояние
   
   // Проверка на серво мотора
   if (!washingDrum.attached()) {
@@ -390,7 +408,7 @@ void checkSystem() {
   }
 
   // Ако се появи нова грешка, спираме пералнята
-  if (!hadError && (hasError || hasCodeError || hasVoltageError || hasPWMError)) {
+  if (!hadError && (hasError || hasCodeError || hasVoltageError || hasPWMError || hasComponentError || hasServoError)) {
     stopWashingMachine();
   }
 
@@ -451,9 +469,10 @@ void loop() {
   checkVoltage();  // Проверяваме напрежението
   checkSystem();
   checkPWM();  // Добавяме проверка на PWM сигналите
+  checkServoConnection();
 
   // Проверяваме за грешки преди да продължим
-  if (hasError || hasCodeError || hasVoltageError || hasPWMError) {
+  if (hasError || hasCodeError || hasVoltageError || hasPWMError || hasComponentError || hasServoError) {
     updateDisplay();  // Показваме съответната грешка
     updateLED();     // Управляваме LED-овете
     
@@ -773,22 +792,18 @@ void navigateLeft() {
 
 void updateLED() {
   // Управление на червения LED за грешка
-  if (hasVoltageError) {
+  if (hasVoltageError || hasCodeError || hasError || hasPWMError || hasComponentError || hasServoError) {
     digitalWrite(ERROR_LED_PIN, HIGH);
     digitalWrite(LED_PIN, LOW);
-  } else if (hasCodeError || hasError || hasPWMError) {
-    digitalWrite(ERROR_LED_PIN, HIGH);
-    digitalWrite(LED_PIN, LOW);
-  } else {
+  } else if (isWashing) {
+    digitalWrite(LED_PIN, HIGH);
     digitalWrite(ERROR_LED_PIN, LOW);
-    // Нормално управление на жълтия LED
-    if (isWashing) {
-      digitalWrite(LED_PIN, HIGH);
-    } else if (standbyMode) {
-      digitalWrite(LED_PIN, (millis() / 1000) % 2);
-    } else {
-      digitalWrite(LED_PIN, LOW);
-    }
+  } else if (standbyMode) {
+    digitalWrite(LED_PIN, (millis() / 1000) % 2);
+    digitalWrite(ERROR_LED_PIN, LOW);
+  } else {
+    digitalWrite(LED_PIN, LOW);
+    digitalWrite(ERROR_LED_PIN, LOW);
   }
 }
 
@@ -797,12 +812,31 @@ void updateDisplay() {
   
   if (hasError) {
     displayError("F16");
+    stopWashingMachine();
   } else if (hasCodeError) {
     displayError("F19");
+    stopWashingMachine();
   } else if (hasVoltageError) {
     displayError("F39");
+    stopWashingMachine();
   } else if (hasPWMError) {
     displayError("F51");
+    stopWashingMachine();
+  } else if (hasComponentError) {
+    displayError("F53");
+    stopWashingMachine();
+  } else if (voltageValue > 100) {
+      digitalWrite(ERROR_LED_PIN, HIGH);
+      displayError("F63");
+      stopWashingMachine(); 
+  } else if (hasServoError) {
+    displayError("F92");
+    stopWashingMachine();
+    // Добавяме проверка за високо напрежение
+  } else if (voltageValue > 511) { // Adjust threshold as needed
+      digitalWrite(ERROR_LED_PIN, HIGH);
+      displayError("F199");
+      stopWashingMachine();
   } else {
     oled.firstPage();
     do {
@@ -832,6 +866,76 @@ void displayFinishMessage() {
     oled.printInYellowSection(":-)", 1);
     oled.sendBuffer();
     delay(3000);
+}
+
+void displayError(const char* error) {
+  oled.setCursor(0, 32);
+  oled.print(error);
+}
+
+// Функция за спиране на пералнята при грешка
+void stopWashingMachine() {
+  isWashing = false;
+  standbyMode = false;
+  currentState = PROGRAM_SELECT;
+  
+  // Спираме серво мотора
+  washingDrum.write(90);  // Връщаме в неутрална позиция
+  
+  // Първоначален по-дълъг звуков сигнал за грешка
+  tone(BUZZER_PIN, ERROR_BEEP_FREQUENCY, 4186);
+  delay(500);
+  noTone(BUZZER_PIN);
+}
+
+// Функции за бъзъра
+void playFinishMelody() {
+  // Мелодия при завършване на пране
+  int melody[] = {4186, 4186, 4186, 4186};  // C8 - висок тон
+  int noteDuration = 50;  // Продължителност на всяка нота в милисекунди
+  
+  // Повтаряме мелодията 4 пъти
+  for (int repeat = 0; repeat < 4; repeat++) {
+    for (int i = 0; i < sizeof(melody)/sizeof(melody[0]); i++) {
+      tone(BUZZER_PIN, melody[i], noteDuration);
+      delay(noteDuration + 50);  // Малка пауза между нотите
+    }
+    noTone(BUZZER_PIN);
+    delay(666);  // Пауза между повторенията
+  }
+}
+
+// Функция за проверка на PWM сигналите
+void checkPWM() {
+  // Проверяваме дали серво мотора получава правилни PWM сигнали
+  int pwmValue = pulseIn(SERVO_PIN, HIGH);
+  
+  if (pwmValue < 500 || pwmValue > 2500) {  // Типичните стойности за серво са между 500 и 2500 µs
+    hasPWMError = true;
+    hasError = false;
+    hasCodeError = false;
+    hasVoltageError = false;
+    digitalWrite(ERROR_LED_PIN, HIGH);
+    
+    // Спираме пералнята при PWM грешка
+    if (isWashing) {
+      stopWashingMachine();
+    }
+  } else {
+    hasPWMError = false;
+    if (!hasError && !hasCodeError && !hasVoltageError) {
+      digitalWrite(ERROR_LED_PIN, LOW);
+    }
+  }
+}
+
+void checkServoConnection() {
+  if (!washingDrum.attached()) {
+    hasServoError = true;
+    stopWashingMachine();
+  } else {
+    hasServoError = false;
+  }
 }
 
 void displayProgramSelect() {
@@ -976,65 +1080,4 @@ void displayWashing() {
   if (washOptions.quickWash) strcat(optionsBuffer, "Q");
   if (strlen(optionsBuffer) == 9) strcat(optionsBuffer, "None");
   oled.printInBlueSection(optionsBuffer, 3);
-}
-
-void displayError(const char* error) {
-  oled.setCursor(0, 32);
-  oled.print(error);
-}
-
-// Функция за спиране на пералнята при грешка
-void stopWashingMachine() {
-  isWashing = false;
-  standbyMode = false;
-  currentState = PROGRAM_SELECT;
-  
-  // Спираме серво мотора
-  washingDrum.write(90);  // Връщаме в неутрална позиция
-  
-  // Първоначален по-дълъг звуков сигнал за грешка
-  tone(BUZZER_PIN, ERROR_BEEP_FREQUENCY, 1000);
-  delay(1000);
-  noTone(BUZZER_PIN);
-}
-
-// Функции за бъзъра
-void playFinishMelody() {
-  // Мелодия при завършване на пране
-  int melody[] = {4186, 4186, 4186, 4186};  // C8 - висок тон
-  int noteDuration = 50;  // Продължителност на всяка нота в милисекунди
-  
-  // Повтаряме мелодията 4 пъти
-  for (int repeat = 0; repeat < 4; repeat++) {
-    for (int i = 0; i < sizeof(melody)/sizeof(melody[0]); i++) {
-      tone(BUZZER_PIN, melody[i], noteDuration);
-      delay(noteDuration + 50);  // Малка пауза между нотите
-    }
-    noTone(BUZZER_PIN);
-    delay(666);  // Пауза между повторенията
-  }
-}
-
-// Функция за проверка на PWM сигналите
-void checkPWM() {
-  // Проверяваме дали серво мотора получава правилни PWM сигнали
-  int pwmValue = pulseIn(SERVO_PIN, HIGH);
-  
-  if (pwmValue < 500 || pwmValue > 2500) {  // Типичните стойности за серво са между 500 и 2500 µs
-    hasPWMError = true;
-    hasError = false;
-    hasCodeError = false;
-    hasVoltageError = false;
-    digitalWrite(ERROR_LED_PIN, HIGH);
-    
-    // Спираме пералнята при PWM грешка
-    if (isWashing) {
-      stopWashingMachine();
-    }
-  } else {
-    hasPWMError = false;
-    if (!hasError && !hasCodeError && !hasVoltageError) {
-      digitalWrite(ERROR_LED_PIN, LOW);
-    }
-  }
 }
