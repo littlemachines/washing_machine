@@ -2,29 +2,14 @@
 #include <U8g2lib.h>
 #include <Servo.h>
 
-// Function prototypes
-void stopWashingMachine();
-void checkPWM();
-void checkServoConnection();
-void displayFinishMessage();
-void playFinishMelody();
-void displayError(const char* error);
-void displayProgramSelect();
-void displayTempSelect();
-void displaySpinSelect();
-void displayWashing();
-
 // Дефиниране на пинове
 #define BUTTON_START 2
 #define BUTTON_UP    3
 #define BUTTON_DOWN  4
 #define BUTTON_LEFT  5
 #define BUTTON_RIGHT 6
-#define LED_PIN     13  // Жълт LED
-#define ERROR_LED_PIN 12 // Червен LED за грешки
+#define LED_PIN     13
 #define SERVO_PIN    9
-#define BUZZER_PIN  7  // Добавяме пин за бъзъра
-#define VOLTAGE_PIN A0  // Аналогов пин за измерване на напрежението
 
 // Константи за OLED дисплея
 #define SCREEN_WIDTH 128
@@ -35,7 +20,7 @@ void displayWashing();
 #define CHAR_HEIGHT 8     // Височина на един ред в пиксели
 #define VISIBLE_ROWS (YELLOW_ROWS + BLUE_ROWS)  // Общ брой видими редове
 
-// Дефиниране на клас OLED за дисплея
+// Дефинираме клас OLED за дисплея
 class DualColorOLED {
 private:
     U8G2_SSD1306_128X64_NONAME_F_HW_I2C display; // Основен обект на U8g2
@@ -88,14 +73,6 @@ public:
             print(text);
         }
     }
-
-    void firstPage() {
-        display.firstPage();
-    }
-
-    bool nextPage() {
-        return display.nextPage();
-    }
 };
 
 // --- Инстанция на класа ---
@@ -137,7 +114,6 @@ const int SilksTemp[] = {0, 20, 30};
 const int PillowsTemp[] = {0, 20, 30, 40, 50, 60};
 const int DownfilleditemsTemp[] = {0, 20, 30, 40, 50, 60};
 const int TrainersTemp[] = {0, 20, 30, 40};
-
 // Възможни обороти за различните програми
 const int cottonECOSpin[] = {0, 400, 600, 800, 1000, 1200, 1400, 1600};
 const int cottonSpin[] = {0, 400, 600, 800, 1000, 1200, 1400, 1600};
@@ -148,48 +124,28 @@ const int JeansSpin[] = {0, 400, 600, 900};
 const int DelicatesSpin[] = {0, 400, 600, 900};
 const int WoollensSpin[] = {0, 400, 600, 800, 1000, 1200};
 const int SilksSpin[] = {0, 400, 600};
-const int PillowsSpin[] = {0, 400, 600, 800, 1000, 1200};
+const int PillowsSpin[] {0, 400, 600, 800, 1000, 1200};
 const int DownfilleditemsSpin[] = {0, 400, 600, 800, 1000, 1200};
 const int TrainersSpin[] = {0, 600};
-
 // Дефиниране на програмите
 WashProgram programs[] = {
-  {"Cotton ECO", cottonECOTemp, sizeof(cottonECOTemp)/sizeof(cottonECOTemp[0]), 
+{"Cotton ECO", cottonECOTemp, sizeof(cottonECOTemp)/sizeof(cottonECOTemp[0]), 
                  cottonECOSpin, sizeof(cottonECOSpin)/sizeof(cottonECOSpin[0]), 
-                 106*60000, 12*60000, 8},
-  {"Cotton", cottonTemp, sizeof(cottonTemp)/sizeof(cottonTemp[0]), 
+                 106*60000, 12*60000, 5},
+
+{"Cotton", cottonTemp, sizeof(cottonTemp)/sizeof(cottonTemp[0]), 
                  cottonSpin, sizeof(cottonSpin)/sizeof(cottonSpin[0]), 
-                 74*60000, 11*60000, 8},
-  {"ECO", ECOTemp, 0, 
-                 ECOSpin, sizeof(ECOSpin)/sizeof(ECOSpin[0]), 
-                 104*60000, 11*60000, 6},
-  {"Minimum iron", MinimumironTemp, sizeof(MinimumironTemp)/sizeof(MinimumironTemp[0]), 
-                 MinimumironSpin, sizeof(MinimumironSpin)/sizeof(MinimumironSpin[0]), 
-                 76*60000, 4*60000, 5},
-  {"Shirts", ShirtsTemp, sizeof(ShirtsTemp)/sizeof(ShirtsTemp[0]), 
-                 ShirtsSpin, sizeof(ShirtsSpin)/sizeof(ShirtsSpin[0]), 
-                 76*60000, 4*60000, 5},
-  {"Jeans", JeansTemp, sizeof(JeansTemp)/sizeof(JeansTemp[0]), 
-                 JeansSpin, sizeof(JeansSpin)/sizeof(JeansSpin[0]), 
-                 76*60000, 6*60000, 6},
-  {"Delicates", DelicatesTemp, sizeof(DelicatesTemp)/sizeof(DelicatesTemp[0]), 
-                 DelicatesSpin, sizeof(DelicatesSpin)/sizeof(DelicatesSpin[0]), 
-                 54*60000, 5*60000, 5},
-  {"Woollens", WoollensTemp, sizeof(WoollensTemp)/sizeof(WoollensTemp[0]), 
-                 WoollensSpin, sizeof(WoollensSpin)/sizeof(WoollensSpin[0]), 
-                 36*60000, 3*60000, 4},
-  {"Silks", SilksTemp, sizeof(SilksTemp)/sizeof(SilksTemp[0]), 
-                 SilksSpin, sizeof(SilksSpin)/sizeof(SilksSpin[0]), 
-                 33*60000, 3*60000, 4},
-  {"Pillows", PillowsTemp, sizeof(PillowsTemp)/sizeof(PillowsTemp[0]), 
-                 PillowsSpin, sizeof(PillowsSpin)/sizeof(PillowsSpin[0]), 
-                 76*60000, 6*60000, 6},
-  {"Down filled items", DownfilleditemsTemp, sizeof(DownfilleditemsTemp)/sizeof(DownfilleditemsTemp[0]), 
-                 DownfilleditemsSpin, sizeof(DownfilleditemsSpin)/sizeof(DownfilleditemsSpin[0]), 
-                 54*60000, 6*60000, 5},
-  {"Trainers", TrainersTemp, sizeof(TrainersTemp)/sizeof(TrainersTemp[0]), 
-                 TrainersSpin, sizeof(TrainersSpin)/sizeof(TrainersSpin[0]), 
-                 54*60000, 3*60000, 4}
+                 74*60000, 11*60000, 5},
+{"ECO", ECOTemp, 0, ECOSpin, 8, 104*60000, 11*60000, 5},
+{"Minimum iron", MinimumironTemp, 6, MinimumironSpin, 6, 76*60000, 4*60000, 5},
+{"Shirts", ShirtsTemp, 4, ShirtsSpin, 3, 76*60000, 4*60000, 5},
+{"Jeans", JeansTemp, 4, JeansSpin, 4, 76*60000, 6*60000},
+{"Delicates", DelicatesTemp, 6, DelicatesSpin, 4, 54*60000, 5*60000},
+{"Woollens", WoollensTemp, 4, WoollensSpin, 6, 36*60000, 3*60000},
+{"Silks", SilksTemp, 3, SilksSpin, 3, 33*60000, 3*60000},
+{"Pillows", PillowsTemp, 6, PillowsSpin, 6, 76*60000, 6*60000},
+{"Down filled items", DownfilleditemsTemp, 6, DownfilleditemsSpin, 6, 54*60000, 6*60000},
+{"Trainers", TrainersTemp, 4, TrainersSpin, 2, 54*60000, 3*60000}
 };
 
  
@@ -298,9 +254,6 @@ int currentPhase = 0;
 // В началото на файла с другите глобални променливи
 unsigned long washStartTime = 0;
 
-// Global variables
-int voltageValue = 0;
-
 // Константи за серво мотора
 const int SERVO_STOP = 1500;      // Централна позиция (стоп)
 const int INITIAL_RAMP = 5000;    // 5 секунди за ускорение
@@ -323,119 +276,18 @@ const unsigned long HOLD_TIME = 30000;     // 30 секунди задържан
 const unsigned long FINAL_HOLD_900_TIME = 120000;  // 2 минути за финална
 const unsigned long FINAL_HOLD_1200_TIME = 180000; // 3 минути за финална
 
-// Добавяне на променлива за грешка
-bool hasError = false;
-bool hasCodeError = false;
-bool hasVoltageError = false;
-bool hasPWMError = false;
-bool hasComponentError = false;
-bool hasServoError = false;
-unsigned long lastVoltageCheck = 0;
-unsigned long lastServoCheck = 0;
-
-// Константи за проверка на напрежението
-#define VOLTAGE_CHECK_INTERVAL 1000  // Проверяваме на всяка секунда
-#define MIN_VOLTAGE_VALUE 491       // Намаляме прага под 450
-
-// Променливи за пиукането при грешка
-unsigned long lastBeepMillis = 0;
-const unsigned long ERROR_BEEP_INTERVAL = 500;  // 1 секунда между пиуканията
-const int ERROR_BEEP_DURATION = 500;            // 100ms продължителност на пиукането
-const int ERROR_BEEP_FREQUENCY = 4186;          // 2kHz честота
-
-// Функция за проверка на захранването
-void checkVoltage() {
-  unsigned long currentMillis = millis();
-  
-  // Проверяваме напрежението на определен интервал
-  if (currentMillis - lastVoltageCheck >= VOLTAGE_CHECK_INTERVAL) {
-    lastVoltageCheck = currentMillis;
-    
-    // Четем стойността от аналоговия пин и правим средна стойност от 3 измервания
-    int voltageValue = 0;
-    for(int i = 0; i < 3; i++) {
-      voltageValue += analogRead(VOLTAGE_PIN);
-      delay(10);
-    }
-    voltageValue = voltageValue / 3;
-    
-    // Показваме стойността за дебъгване
-    Serial.print("Voltage value: ");
-    Serial.println(voltageValue);
-    
-    // Ако напрежението е под минималното, маркираме грешка
-    if (voltageValue < MIN_VOLTAGE_VALUE) {
-      hasVoltageError = true;
-      hasCodeError = false;  // Изчистваме другите грешки
-      hasError = false;
-      digitalWrite(ERROR_LED_PIN, HIGH);
-      Serial.println("Voltage error detected - LED should be ON");
-    } else {
-      hasVoltageError = false;
-      if (!hasError && !hasCodeError) {
-        digitalWrite(ERROR_LED_PIN, LOW);
-      }
-    }
-    
-  }
-}
-
-// Функция за проверка на връзките и кода
-void checkSystem() {
-  bool hadError = hasError || hasCodeError || hasVoltageError || hasPWMError || hasComponentError || hasServoError;  // Запомняме предишното състояние
-  
-  // Проверка на серво мотора
-  if (!washingDrum.attached()) {
-    hasError = true;
-  }
-  
-  // Проверка на дисплея
-  Wire.beginTransmission(0x3C);
-  if (Wire.endTransmission() != 0) {
-    hasError = true;
-  }
-
-  // Проверка на валидността на програмите
-  hasCodeError = false;
-  for (int i = 0; i < sizeof(programs) / sizeof(programs[0]); i++) {
-    if (programs[i].name == nullptr || 
-        programs[i].baseWashTime == 0) {
-      Serial.print("Invalid program found at index: ");
-      Serial.println(i);
-      hasCodeError = true;
-      break;
-    }
-  }
-
-  // Ако се появи нова грешка, спираме пералнята
-  if (!hadError && (hasError || hasCodeError || hasVoltageError || hasPWMError || hasComponentError || hasServoError)) {
-    stopWashingMachine();
-  }
-
-  // Debug информация
-  Serial.println("System check complete:");
-  Serial.print("Code error: ");
-  Serial.println(hasCodeError ? "YES" : "NO");
-  Serial.print("Connection error: ");
-  Serial.println(hasError ? "YES" : "NO");
-}
-
 void setup() {
   // Стартираме серийния принт
   Serial.begin(9600); // open the serial port at 9600 bps:
   Serial.println("Program started");
 
   // Инициализация на пиновете
-  pinMode(LED_PIN, OUTPUT);
-  pinMode(ERROR_LED_PIN, OUTPUT);  // Уверяваме се че червеният LED е настроен като изход
   pinMode(BUTTON_START, INPUT_PULLUP);
   pinMode(BUTTON_UP, INPUT_PULLUP);
   pinMode(BUTTON_DOWN, INPUT_PULLUP);
   pinMode(BUTTON_LEFT, INPUT_PULLUP);
   pinMode(BUTTON_RIGHT, INPUT_PULLUP);
-  pinMode(SERVO_PIN, OUTPUT);
-  pinMode(BUZZER_PIN, OUTPUT);  // Настройваме пина на бъзъра като изход
-  pinMode(VOLTAGE_PIN, INPUT);  // Настройваме пина за измерване на напрежение
+  pinMode(LED_PIN, OUTPUT);
 
   Serial.println("Pins initialized");
   
@@ -453,48 +305,26 @@ void setup() {
 
   Serial.println("Display initialized");
   
-  // Добавяме проверка на системата в setup
-  checkSystem();
-  
   // Начално показване на менюто
   updateDisplay();
-  
-  // Тестваме червения LED при стартиране
-  digitalWrite(ERROR_LED_PIN, HIGH);
-  delay(1000);
-  digitalWrite(ERROR_LED_PIN, LOW);
 }
 
 void loop() {
-  checkVoltage();  // Проверяваме напрежението
-  checkSystem();
-  checkPWM();  // Добавяме проверка на PWM сигналите
-  checkServoConnection();
-
-  // Проверяваме за грешки преди да продължим
-  if (hasError || hasCodeError || hasVoltageError || hasPWMError || hasComponentError || hasServoError) {
-    updateDisplay();  // Показваме съответната грешка
-    updateLED();     // Управляваме LED-овете
-    
-    // Пиукане при грешка
-    tone(BUZZER_PIN, ERROR_BEEP_FREQUENCY, 4186);
-    delay(315);
-    noTone(BUZZER_PIN);
-    delay(315);
-    
-    return;  // Не продължаваме с нормалната работа
-  }
-  
-  // Нормална работа само ако няма грешки
+  // Проверка на бутоните
   handleButtons();
-  updateDisplay();
+  
+  // Управление на LED индикатора
   updateLED();
   
+  // Ако пералнята пере, въртим барабана
   if (isWashing) {
     runWashCycle();
   }
-  
+
   Serial.println("End Loop");
+  
+  // Обновяване на дисплея
+  updateDisplay();
   delay(100);
 }
 
@@ -661,6 +491,11 @@ void moveToNextPhase() {
         finishWashCycle();
         return;
     }
+    
+    // Плавно спиране при смяна на фаза
+    washingDrum.writeMicroseconds(SERVO_STOP);
+    delay(2000);  // Пауза между фазите
+    
     updateDisplay();
 }
 
@@ -670,7 +505,6 @@ void finishWashCycle() {
     currentPhase = 0;
     
     displayFinishMessage();
-    playFinishMelody();  // Добавяме мелодия при завършване
     updateDisplay();
 }
 
@@ -791,73 +625,14 @@ void navigateLeft() {
 }
 
 void updateLED() {
-  // Управление на червения LED за грешка
-  if (hasVoltageError || hasCodeError || hasError || hasPWMError || hasComponentError || hasServoError) {
-    digitalWrite(ERROR_LED_PIN, HIGH);
-    digitalWrite(LED_PIN, LOW);
-  } else if (isWashing) {
+  if (isWashing) {
     digitalWrite(LED_PIN, HIGH);
-    digitalWrite(ERROR_LED_PIN, LOW);
   } else if (standbyMode) {
+    // Мигане в режим на готовност
     digitalWrite(LED_PIN, (millis() / 1000) % 2);
-    digitalWrite(ERROR_LED_PIN, LOW);
   } else {
     digitalWrite(LED_PIN, LOW);
-    digitalWrite(ERROR_LED_PIN, LOW);
   }
-}
-
-void updateDisplay() {
-  oled.clearDisplay();
-  
-  if (hasError) {
-    displayError("F16");
-    stopWashingMachine();
-  } else if (hasCodeError) {
-    displayError("F19");
-    stopWashingMachine();
-  } else if (hasVoltageError) {
-    displayError("F39");
-    stopWashingMachine();
-  } else if (hasPWMError) {
-    displayError("F51");
-    stopWashingMachine();
-  } else if (hasComponentError) {
-    displayError("F53");
-    stopWashingMachine();
-  } else if (voltageValue > 100) {
-      digitalWrite(ERROR_LED_PIN, HIGH);
-      displayError("F63");
-      stopWashingMachine(); 
-  } else if (hasServoError) {
-    displayError("F92");
-    stopWashingMachine();
-    // Добавяме проверка за високо напрежение
-  } else if (voltageValue > 511) { // Adjust threshold as needed
-      digitalWrite(ERROR_LED_PIN, HIGH);
-      displayError("F199");
-      stopWashingMachine();
-  } else {
-    oled.firstPage();
-    do {
-      switch (currentState) {
-        case PROGRAM_SELECT:
-          displayProgramSelect();
-          break;
-        case TEMP_SELECT:
-          displayTempSelect();
-          break;
-        case SPIN_SELECT:
-          displaySpinSelect();
-          break;
-        case WASHING:
-          displayWashing();
-          break;
-      }
-    } while (oled.nextPage());
-  }
-  
-  oled.sendBuffer();
 }
 
 void displayFinishMessage() {
@@ -868,74 +643,26 @@ void displayFinishMessage() {
     delay(3000);
 }
 
-void displayError(const char* error) {
-  oled.setCursor(0, 32);
-  oled.print(error);
-}
-
-// Функция за спиране на пералнята при грешка
-void stopWashingMachine() {
-  isWashing = false;
-  standbyMode = false;
-  currentState = PROGRAM_SELECT;
+void updateDisplay() {
+  oled.clearDisplay();
+  oled.setCursor(0,0);
   
-  // Спираме серво мотора
-  washingDrum.write(90);  // Връщаме в неутрална позиция
-  
-  // Първоначален по-дълъг звуков сигнал за грешка
-  tone(BUZZER_PIN, ERROR_BEEP_FREQUENCY, 4186);
-  delay(500);
-  noTone(BUZZER_PIN);
-}
-
-// Функции за бъзъра
-void playFinishMelody() {
-  // Мелодия при завършване на пране
-  int melody[] = {4186, 4186, 4186, 4186};  // C8 - висок тон
-  int noteDuration = 50;  // Продължителност на всяка нота в милисекунди
-  
-  // Повтаряме мелодията 4 пъти
-  for (int repeat = 0; repeat < 4; repeat++) {
-    for (int i = 0; i < sizeof(melody)/sizeof(melody[0]); i++) {
-      tone(BUZZER_PIN, melody[i], noteDuration);
-      delay(noteDuration + 50);  // Малка пауза между нотите
-    }
-    noTone(BUZZER_PIN);
-    delay(666);  // Пауза между повторенията
+  switch (currentState) {
+    case PROGRAM_SELECT:
+      displayProgramSelect();
+      break;
+    case TEMP_SELECT:
+      displayTempSelect();
+      break;
+    case SPIN_SELECT:
+      displaySpinSelect();
+      break;
+    case WASHING:
+      displayWashing();
+      break;
   }
-}
-
-// Функция за проверка на PWM сигналите
-void checkPWM() {
-  // Проверяваме дали серво мотора получава правилни PWM сигнали
-  int pwmValue = pulseIn(SERVO_PIN, HIGH);
   
-  if (pwmValue < 500 || pwmValue > 2500) {  // Типичните стойности за серво са между 500 и 2500 µs
-    hasPWMError = true;
-    hasError = false;
-    hasCodeError = false;
-    hasVoltageError = false;
-    digitalWrite(ERROR_LED_PIN, HIGH);
-    
-    // Спираме пералнята при PWM грешка
-    if (isWashing) {
-      stopWashingMachine();
-    }
-  } else {
-    hasPWMError = false;
-    if (!hasError && !hasCodeError && !hasVoltageError) {
-      digitalWrite(ERROR_LED_PIN, LOW);
-    }
-  }
-}
-
-void checkServoConnection() {
-  if (!washingDrum.attached()) {
-    hasServoError = true;
-    stopWashingMachine();
-  } else {
-    hasServoError = false;
-  }
+  oled.sendBuffer();
 }
 
 void displayProgramSelect() {
