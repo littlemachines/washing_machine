@@ -114,6 +114,23 @@ const int SilksTemp[] = {0, 20, 30};
 const int PillowsTemp[] = {0, 20, 30, 40, 50, 60};
 const int DownfilleditemsTemp[] = {0, 20, 30, 40, 50, 60};
 const int TrainersTemp[] = {0, 20, 30, 40};
+const int furtherprogrammesTemp[] = {};
+const int QuickPowerWashTemp[] = {40, 60};
+const int AutomaticplusTemp[] = {0, 20, 30, 40};
+const int ExpressTemp[] = {0, 20, 30, 40};
+const int DarkgarmentsTemp[] = {0, 20, 30, 40, 50, 60};
+const int SportTemp[] = {0, 20, 30, 40, 50, 60};
+const int OutdoorTemp[] = {0, 20, 30, 40};
+const int ProofingTemp[] = {40};
+const int DownduvetTemp[] = {40};
+const int CottonHygieneTemp[] = {};
+const int CurtainsTemp[] = {0, 20, 30, 40};
+const int NewTextilesTemp[] = {0, 20, 30, 40};
+const int RinsesTemp[] = {0};
+const int SoftenerrinseTemp[] = {};
+const int QuickDryTemp[] = {};
+const int SpinTemp[] = {};
+const int DrumCleanTemp[] = {85};
 // Възможни обороти за различните програми
 const int cottonECOSpin[] = {0, 400, 600, 800, 1000, 1200, 1400, 1600};
 const int cottonSpin[] = {0, 400, 600, 800, 1000, 1200, 1400, 1600};
@@ -127,6 +144,23 @@ const int SilksSpin[] = {0, 400, 600};
 const int PillowsSpin[] {0, 400, 600, 800, 1000, 1200};
 const int DownfilleditemsSpin[] = {0, 400, 600, 800, 1000, 1200};
 const int TrainersSpin[] = {0, 600};
+const int furtherprogrammesSpin[] = {};
+const int QuickPowerWashSpin[] = {0, 400, 600, 800, 1000, 1200, 1400, 1600};
+const int AutomaticplusSpin[] = {0, 400, 600, 800, 1000, 1200, 1400};
+const int ExpressSpin[] = {0,  400, 600, 800, 1000, 1200};
+const int DarkgarmentsSpin[] = {0,  400, 600, 800, 1000, 1200};
+const int SportSpin[] = {0,  400, 600, 800, 1000, 1200};
+const int OutdoorSpin[] = {0, 400, 600, 800};
+const int ProofingSpin[] = {};
+const int DownduvetSpin[] = {0, 400, 600, 800, 1000};
+const int CottonHygieneSpin[] = {0, 400, 600, 800, 1000, 1200, 1400, 1600};
+const int CurtainsSpin[] = {0, 400, 600};
+const int NewTextilesSpin[] = {0, 400, 600, 800, 1000, 1200};
+const int RinsesSpin[] = {0, 400, 600, 800, 1000, 1200, 1400, 1600};
+const int SoftenerrinseSpin[] = {0, 400, 600, 800, 1000, 1200};
+const int QuickDrySpin[] = {50};
+const int SpinSpin[] = {0, 400, 600, 800, 1000, 1200, 1400, 1600};
+const int DrumCleanSpin[] = {600};
 // Дефиниране на програмите
 WashProgram programs[] = {
 {"Cotton ECO", cottonECOTemp, sizeof(cottonECOTemp)/sizeof(cottonECOTemp[0]), 
@@ -144,8 +178,25 @@ WashProgram programs[] = {
 {"Woollens", WoollensTemp, 4, WoollensSpin, 6, 36*60000, 3*60000},
 {"Silks", SilksTemp, 3, SilksSpin, 3, 33*60000, 3*60000},
 {"Pillows", PillowsTemp, 6, PillowsSpin, 6, 76*60000, 6*60000},
-{"Down filled items", DownfilleditemsTemp, 6, DownfilleditemsSpin, 6, 54*60000, 6*60000},
-{"Trainers", TrainersTemp, 4, TrainersSpin, 2, 54*60000, 3*60000}
+{"Down filled items DownCare", DownfilleditemsTemp, 6, DownfilleditemsSpin, 6, 54*60000, 6*60000},
+{"Trainers", TrainersTemp, 4, TrainersSpin, 2, 54*60000, 3*60000},
+{"Further Programmes", furtherprogrammesTemp, 0, furtherprogrammesSpin, 0, 0, 0},
+{"QuickPowerWash", QuickPowerWashTemp, 2, QuickPowerWashSpin, 8, 38*60000, 11*60000},
+{"Automatic plus", AutomaticplusTemp, 4, AutomaticplusSpin, 7, 38*60000, 11*60000},
+{"Express", ExpressTemp, 4, ExpressSpin, 6, 38*60000, 11*60000},
+{"Darks", DarkgarmentsTemp, 4, DarkgarmentsSpin, 6, 45*60000, 4*60000},
+{"Sport", DarkgarmentsTemp, 4, DarkgarmentsSpin, 6, 75*60000, 4*60000},
+{"Outdoor", OutdoorTemp, 4, OutdoorSpin, 4, 52*60000, 4*60000},
+{"Soak ImpraProtect", ProofingTemp, 1, ProofingSpin, 0, 39*60000, 0},
+{"Downs DownCare", DownduvetTemp, 1, DownduvetSpin, 5, 36*60000, 3*60000},
+{"Cotton Hygiene", CottonHygieneTemp, 0, CottonHygieneSpin, 8, 134*60000, 11*60000},
+{"Curtains", CottonHygieneTemp, 4, CottonHygieneSpin, 3, 61*60000, 5*60000},
+{"New Textiles", NewTextilesTemp, 4, NewTextilesSpin, 6, 33*60000, 6*60000},
+{"4 Rinses", RinsesTemp, 1, RinsesSpin, 8, 50*60000, 11*60000},
+{"Softener rinse", SoftenerrinseTemp, 0, SoftenerrinseSpin, 8, 19*60000, 11*60000},
+{"Quick dry/Steam", QuickDryTemp, 0, QuickDrySpin, 1, 0, 20*60000},
+{"Spin", SpinTemp, 0, SpinSpin, 8, 0, 8*60000},
+{"Drum Clean IntenseClean", DrumCleanTemp, 1, DrumCleanSpin, 1, 70*60000, 5*60000},
 };
 
  
