@@ -680,7 +680,7 @@ void updateLED() {
     digitalWrite(LED_PIN, HIGH);
   } else if (standbyMode) {
     // Мигане в режим на готовност
-    digitalWrite(LED_PIN, (millis() / 1000) % 2);
+    digitalWrite(LED_PIN, (millis() / 500) % 2);
   } else {
     digitalWrite(LED_PIN, LOW);
   }
